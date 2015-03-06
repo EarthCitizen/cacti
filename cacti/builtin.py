@@ -269,6 +269,7 @@ some_inst = some_class.new()
 print(some_class.to_string())
 print(some_inst.to_string())
 print(some_inst.call_method('message'))
+print(some_inst.super.to_string())
 
 # number = TypeDefinition('Number')
 # register_type_definition(number)
