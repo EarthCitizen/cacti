@@ -1,3 +1,5 @@
+__all__ = ['Class', 'Function', 'Method', 'Object', 'PyMethod', 'Trait', 'TypeDefinition']
+
 from collections import defaultdict
 
 TYPE_DEFINITIONS = defaultdict(lambda: None)
@@ -84,7 +86,7 @@ class TypeDefinition(Object):
         self.__methods[method.name] = method
         
     def has_method(self, method_name):
-        return (method_name in self.__methods.keys)
+        return (method_name in self.__methods.keys())
     
     def get_method(self, name):
         return self.__methods[name]
