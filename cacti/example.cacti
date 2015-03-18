@@ -1,0 +1,52 @@
+class Something extends SomethingElse having Number, Object {
+
+	hook new(a, b, c) {
+		
+	}
+	
+	hook add(self, other) {
+		return self + other
+	}
+	
+	hook call() {
+		return Something(123)
+	}
+	
+	hook subtract(self, other) {
+	}
+	
+	hook left_shift(self, other) {
+	}
+	
+	method init(a, b, c) {
+	
+	}
+	
+	val FOO = 123
+	var a
+	var b
+	var c
+	
+	property x(getter=get_x, setter=set_x)
+	property u
+	property a
+	
+	setter x(value) {
+	}
+	
+	getter x() {
+	}
+	
+	property x {
+		setter x(value) {
+		}
+		
+		getter x() {
+		}
+	}
+}
+
+s = Something(a, b, c)
+s.init -> <Method 'init'>
+s.init(a, b, c)
+
