@@ -18,6 +18,21 @@ class Something extends SomethingElse having Number, Object {
 	hook left_shift(self, other) {
 	}
 	
+	add(other) {
+		return self[0] = other
+	}
+	
+	subtract(other) {
+		do_someting()
+	}
+	
+	call(a, b, c) {
+	}
+	
+	// Functions are the same as static methods
+	function factory_function() {
+	}
+	
 	method init(a, b, c) {
 	
 	}
@@ -27,22 +42,15 @@ class Something extends SomethingElse having Number, Object {
 	var b
 	var c
 	
-	property x(getter=get_x, setter=set_x)
-	property u
-	property a
+	property u(get, set)
+	property a(r)
 	
-	setter x(value) {
-	}
-	
-	getter x() {
-	}
-	
-	property x {
-		setter x(value) {
+	private property x {
+		set(value) {
+			self._x = value * 3
 		}
 		
-		getter x() {
-		}
+		get { return self._x}
 	}
 }
 

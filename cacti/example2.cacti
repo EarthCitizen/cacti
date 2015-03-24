@@ -1,0 +1,46 @@
+class Foo {
+
+	hook init(a, b, c) {
+		self.a = a
+		self.b = b
+		self.c = c
+	}
+	
+	hook +(b) {
+		l = [1, 2, 3]
+		x = y / *l
+		return a.plus(b)
+	}
+	
+	hook -(b) {
+		return a.minus(b)
+	}
+	
+	hook ()(a, b, c) {
+		return a.toString() + b.toString() + c.toString()
+	}
+	
+	hook ==(b) {
+		(a.a == b.a) and (a.b == b.b) and (a.c == b.c)
+	}
+	
+	function factory_function() {}
+	
+	val SOMETHING = 'ABCDEFG'
+	var x = 5
+	
+	method instance_modifier() {
+		self.x = 123
+	}
+	
+	method do_something() {}
+	
+	method subclass_can_call_this() {}
+	
+	property other
+	
+	property size {
+		get { return self.list.size }
+		set(value) { self.list.size = value }
+	}
+}

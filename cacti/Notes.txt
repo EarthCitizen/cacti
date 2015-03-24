@@ -1,0 +1,28 @@
+var - can only be private
+val - default access private
+function, method, property - default accessibility public
+function - is equivalent to static class method
+property - if set specified, get must be specified
+
+
+EXPRESSIONS:
+an operator followed by a list will reduce the value for the list by the operator
+ y = x + 1 2 3 / 7
+
+TODO:
+How to have static constants for class? (syntax)
+Reduce operator <--(
+Map operator <<-
+Filter operator <<=
+
+
+y = x -> (list)
+y = x -> (1, 2, 3)
+
+list = [1,2,3,4,5,6,7,8,9,0]
+result = list <<= (x) { (x % 2) == 0 } <-+
+
+
+p = Property()
+
+
