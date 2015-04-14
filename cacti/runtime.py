@@ -1,3 +1,3 @@
 from collections import defaultdict
 
-TYPE_DEFINITIONS = defaultdict(lambda: None)
+BUILTIN_SYMBOLS = defaultdict(lambda: None)

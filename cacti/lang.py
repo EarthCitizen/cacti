@@ -41,6 +41,20 @@ __VALID_SYMBOL_PATTERN__ = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 def isvalidsymbol(symbol):
     return True if isinstance(symbol, str) and __VALID_SYMBOL_PATTERN__.match(symbol) else False
 
+class SymbolContext:
+    def __init__(self, *context_chain):
+        self.__chain = context_chain
+    
+    def find_symbol(self, symbol_name):
+        symbol_found = None
+        for context in self.__chain:
+            try:
+                symbol_found = context[symbol_name]
+            except KeyError:
+                raise SymbolError("Unknown symbol '{}'".format(symbol_name))
+            
+        return symbol_found.get_value()
+
 class SymbolTable:
     def __init__(self, from_dict={}, parent_table=None):
         if not isinstance(from_dict, dict):
