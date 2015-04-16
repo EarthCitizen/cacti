@@ -44,12 +44,16 @@ def isvalidsymbol(symbol):
 class SymbolContext:
     def __init__(self, *context_chain):
         self.__chain = context_chain
+        
+    @property
+    def chain(self):
+        return list(self.__chain)
     
-    def find_symbol(self, symbol_name):
+    def __getitem__(self, symbol_name):
         symbol_found = None
-        for context in self.__chain:
+        for table in self.__chain:
             try:
-                symbol_found = context[symbol_name]
+                symbol_found = table[symbol_name]
             except KeyError:
                 raise SymbolError("Unknown symbol '{}'".format(symbol_name))
             

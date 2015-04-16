@@ -1,10 +1,7 @@
-from symtable import Symbol
 from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder,\
     SymbolContext
-from cacti.new_lang import params
+# from cacti.new_lang import params
 __all__ = ['Class', 'Function', 'Method', 'Object', 'PyMethod', 'Trait', 'TypeDefinition']
-
-from collections import defaultdict
 
 BUILTIN_SYMBOLS = SymbolTable()
 
@@ -18,10 +15,10 @@ class UnsupportedMethodError(Exception): pass
 
 class UnknownPropertyError(Exception): pass
 
+class ArityError(Exception): pass
+
 def get_object():
     return Object(get_type_definition('Object'), None)
-
-
 
 # All Object Instances Have This
 class Object:
@@ -31,8 +28,8 @@ class Object:
         self.__field_table = SymbolTable()
         self.__hook_table = SymbolTable(parent_table=super.__hook_table)
         self.__property_table = SymbolTable(parent_table=super.__property_table)
-        self_symbol = SymbolTable(from_dict={'self', self})
-        self.__symbol_context = SymbolContext(self_symbol, self.__property_table, self.__field_table, BUILTIN_SYMBOLS)
+        self_symbol = SymbolTable(from_dict={'self': self, 'super': superclass})
+        self.__symbol_context = SymbolContext(self_symbol, self.__field_table, BUILTIN_SYMBOLS)
         
     def add_hook(self, hook_name, hook_value):
         self.__hook_table[hook_name] = ConstantValueHolder(hook_value)
@@ -49,18 +46,6 @@ class Object:
     
     def get_property(self, property_name):
         self.__property_table[property_name]
-#         object_searched = self
-#         property_fetched = None
-#         
-#         while not property_fetched:
-#             property_fetched = object_searched.type.get_property(property_name)
-#             if not property_fetched:
-#                 if not object_searched.super:
-#                     raise UnknownPropertyError('Property not found: ' + property_name)
-#                 else:
-#                     object_searched = object_searched.super
-#                     
-#         return property_fetched
     
     def get_property_value(self, property_name):
         return self.__property_table[property_name].get_value()
@@ -69,70 +54,72 @@ class Object:
         self.__property_table[property_name].set_value()
     
         
-    @property
-    def id(self):
-        return id(self)
+    #@property
+    #def id(self):
+    #    return id(self)
         
-    def to_string(self):
-        return "<{}>".format(self.type.name)
+    #def to_string(self):
+    #    return "<{}>".format(self.type.name)
         
-    @property
-    def type(self):
-        return self.__type_def
+    #@property
+    #def type(self):
+    #    return self.__type_def
         
-    @property
-    def super(self):
-        return self.__superclass
+    #@property
+    #def super(self):
+    #    return self.__superclass
     
     #def __str__(self):
     #    return self.to_string()
     
-class TypeDefinition(Object):
-    def __init__(self, type_name):
-        # If type_name is TypeDefinition
-        # then type property will be a
-        # circular reference
-        class_name = self.__class__.__name__
-        if type_name == class_name:
-            type_def = self
-        else:
-            type_def = get_type_definition(class_name)
-        
-        super().__init__(type_def, get_object())
-        self.__methods = defaultdict(lambda: None)
-        self.__type_name = type_name
-        self.__final = False
-        self.__property_table = SymbolTable()
-        
-    def add_property(self, property_name, property_value, constant=False):
-        if constant:
-            self.__property_table[property_name] = ConstantValueHolder(property_value)
-        else:
-            self.__property_table[property_name] = ValueHolder(property_value)
-        
-    @property
-    def final(self):
-        return self.__final
+
     
-    @final.setter
-    def final(self, value):
-        self.__final = value
-    
-    @property
-    def name(self):
-        return self.__type_name
-        
-    def add_method(self, method):
-        self.__methods[method.name] = method
-        
-    def has_method(self, method_name):
-        return (method_name in self.__methods.keys())
-    
-    def get_method(self, name):
-        return self.__methods[name]
-    
-    def to_string(self):
-        return "<{} '{}'>".format(self.__class__.__name__, self.name)
+# class TypeDefinition(Object):
+#     def __init__(self, type_name):
+#         # If type_name is TypeDefinition
+#         # then type property will be a
+#         # circular reference
+#         class_name = self.__class__.__name__
+#         if type_name == class_name:
+#             type_def = self
+#         else:
+#             type_def = get_type_definition(class_name)
+#         
+#         super().__init__(type_def, get_object())
+#         self.__methods = defaultdict(lambda: None)
+#         self.__type_name = type_name
+#         self.__final = False
+#         self.__property_table = SymbolTable()
+#         
+#     def add_property(self, property_name, property_value, constant=False):
+#         if constant:
+#             self.__property_table[property_name] = ConstantValueHolder(property_value)
+#         else:
+#             self.__property_table[property_name] = ValueHolder(property_value)
+#         
+#     @property
+#     def final(self):
+#         return self.__final
+#     
+#     @final.setter
+#     def final(self, value):
+#         self.__final = value
+#     
+#     @property
+#     def name(self):
+#         return self.__type_name
+#         
+#     def add_method(self, method):
+#         self.__methods[method.name] = method
+#         
+#     def has_method(self, method_name):
+#         return (method_name in self.__methods.keys())
+#     
+#     def get_method(self, name):
+#         return self.__methods[name]
+#     
+#     def to_string(self):
+#         return "<{} '{}'>".format(self.__class__.__name__, self.name)
     
     
 # class InheritingTypeDefintition(TypeDefinition):
@@ -157,21 +144,49 @@ class TypeDefinition(Object):
 #             parent_instance = self.__base_class.new()
 #         return Object(self, parent_instance)
     
-class Callable(Object):
-    def __init__(self):
-        self.__params = SymbolTable()
+class Callable:
+    def __init__(self, content):
+        self.__params = []
+        self.__content = content
         
     def add_param(self, param_name):
         self.__params[param_name] = ConstantValueHolder(None)
+        
+    def __check_arity(self, *param_values):
+        if len(self.__params) != len(param_values):
+            raise ArityError('Parameter count does not match')
+        
+    def __make_params_table(self, *param_values):
+        param_table = SymbolTable()
+        param_iter = iter(param_values)
+        for v in self.__params:
+            param_table[v] = ConstantValueHolder(next(param_iter))
+        return param_table
     
-    def call(self, context, *params):
-        pass
+    def call(self, context, *param_values):
+        self.__check_arity(*param_values)
+        param_table = self.__make_params_table(*param_values)
+        call_context = SymbolContext(param_table, context.chain)
+        return self.__content(call_context)
+    
+def method_content(context):
+    return context['x'].get_value() + " and this"
+
+tc = Callable(method_content)
+
+table = SymbolTable()
+table['y'] = ConstantValueHolder(5)
+table['x'] = ConstantValueHolder(10)
+
+c = SymbolContext(table)
+
+tc.call(c)
     
 class MethodBinding(Callable):
     def __init__(self, symbol_context, method):
         self.__symbol_context = symbol_context
         self.__method = method
-        
+         
     def __getattr__(self, name):
         return self.__method.__getattr__(self.__method, name)
 
