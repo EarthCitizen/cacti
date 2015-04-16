@@ -1,4 +1,4 @@
-from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder,\
+from lang import SymbolTable, ConstantValueHolder, ValueHolder,\
     SymbolContext
 # from cacti.new_lang import params
 __all__ = ['Class', 'Function', 'Method', 'Object', 'PyMethod', 'Trait', 'TypeDefinition']
@@ -166,11 +166,11 @@ class Callable:
     def call(self, context, *param_values):
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
-        call_context = SymbolContext(param_table, context.chain)
+        call_context = SymbolContext(param_table, *context.chain)
         return self.__content(call_context)
     
 def method_content(context):
-    return context['x'].get_value() + " and this"
+    return str(context['x'].get_value()) + " and this"
 
 tc = Callable(method_content)
 
@@ -178,9 +178,10 @@ table = SymbolTable()
 table['y'] = ConstantValueHolder(5)
 table['x'] = ConstantValueHolder(10)
 
-c = SymbolContext(table)
+#print(table['x'].get_value())
 
-tc.call(c)
+c = SymbolContext(table)
+print(tc.call(c))
     
 class MethodBinding(Callable):
     def __init__(self, symbol_context, method):

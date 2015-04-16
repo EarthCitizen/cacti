@@ -43,21 +43,29 @@ def isvalidsymbol(symbol):
 
 class SymbolContext:
     def __init__(self, *context_chain):
+        for t in context_chain:
+            if not isinstance(t, SymbolTable):
+                raise TypeError('All elements in the context chain must be a SymbolTable')
+        
         self.__chain = context_chain
         
     @property
     def chain(self):
-        return list(self.__chain)
+        return self.__chain
     
     def __getitem__(self, symbol_name):
         symbol_found = None
         for table in self.__chain:
+            print(table)
             try:
                 symbol_found = table[symbol_name]
             except KeyError:
-                raise SymbolError("Unknown symbol '{}'".format(symbol_name))
+                pass
+                
+        if symbol_found == None:
+            raise SymbolError("Unknown symbol '{}'".format(symbol_name))
             
-        return symbol_found.get_value()
+        return symbol_found
 
 class SymbolTable:
     def __init__(self, from_dict={}, parent_table=None):
