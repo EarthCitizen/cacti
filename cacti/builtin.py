@@ -1,7 +1,11 @@
 from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder, SymbolTableChain
 
-# from cacti.new_lang import params
-__all__ = ['Class', 'Function', 'Method', 'Object', 'PyMethod', 'Trait', 'TypeDefinition']
+__all__ = [
+           # Classes
+           'Callable'
+           ]
+           
+           #, 'Class', 'Function', 'Method', 'Object', 'PyMethod', 'Trait', 'TypeDefinition']
 
 BUILTIN_SYMBOLS = SymbolTable()
 
@@ -32,26 +36,26 @@ class Object:
         self.__symbol_context = SymbolTableChain(self_symbol, self.__field_table, BUILTIN_SYMBOLS)
         
     def add_hook(self, hook_name, hook_value):
-        self.__hook_table[hook_name] = ConstantValueHolder(hook_value)
+        self.__hook_table.add_symbol(hook_name, ConstantValueHolder(hook_value))
     
     def add_val(self, val_name, val_value):
-        self.__field_table[val_name] = ConstantValueHolder(val_value)
+        self.__field_table.add_symbol(val_name, ConstantValueHolder(val_value))
     
     def add_var(self, var_name, var_value):
-        self.__field_table[var_name] = ValueHolder(var_value)
+        self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
     def add_method(self, method_name, method):
         const_value = ConstantValueHolder(MethodBinding(self.__symbol_context, method))
-        self.__property_table[method_name] = const_value
+        self.__property_table.add_symbol(method_name, const_value)
+        
+    def add_property(self, property_name, get, set):
+        pass
     
     def get_property(self, property_name):
         self.__property_table[property_name]
-    
-    def get_property_value(self, property_name):
-        return self.__property_table[property_name].get_value()
-    
-    def set_property_value(self, property_name, property_value):
-        self.__property_table[property_name].set_value()
+        
+    def set_property(self, property_name, property_value):
+        self.__property_table[property_name] = property_value
     
         
     #@property
@@ -150,7 +154,7 @@ class Callable:
         self.__content = content
         
     def add_param(self, param_name):
-        self.__params[param_name] = ConstantValueHolder(None)
+        self.__params += [param_name]
         
     def __check_arity(self, *param_values):
         if len(self.__params) != len(param_values):
@@ -160,7 +164,7 @@ class Callable:
         param_table = SymbolTable()
         param_iter = iter(param_values)
         for v in self.__params:
-            param_table[v] = ConstantValueHolder(next(param_iter))
+            param_table.add_symbol(v, ConstantValueHolder(next(param_iter)))
         return param_table
     
     def call(self, context, *param_values):
@@ -168,20 +172,6 @@ class Callable:
         param_table = self.__make_params_table(*param_values)
         call_context = SymbolTableChain(param_table, *context.chain)
         return self.__content(call_context)
-    
-def method_content(context):
-    return str(context['x'].get_value()) + " and this"
-
-tc = Callable(method_content)
-
-table = SymbolTable()
-table['y'] = ConstantValueHolder(5)
-table['x'] = ConstantValueHolder(10)
-
-#print(table['x'].get_value())
-
-c = SymbolTableChain(table)
-print(tc.call(c))
     
 class MethodBinding(Callable):
     def __init__(self, symbol_context, method):

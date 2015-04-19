@@ -37,6 +37,13 @@ class ConstantValueHolder(ValueHolder):
         raise ConstantValueError()
     
     value = property(ValueHolder.get_value, set_value)
+    
+class PropertyValueHolder(ValueHolder):
+    def __init__(self, get_method, set_method):
+        pass
+
+class ReadOnlyPropertyValueHolder(PropertyValueHolder):
+    pass
 
 class SymbolError(Exception): pass
 
