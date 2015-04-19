@@ -108,6 +108,10 @@ class TestSymbolTable:
         assert 'y' in table
     
 class TestSymbolTableChain:
+    def test_chain_elements_must_be_symbol_tables(self):
+        with pytest.raises(TypeError):
+            SymbolTableChain(1)
+    
     def test_gets_value_from_chain(self):
         t1 = SymbolTable({'x': ValueHolder(4)})
         t2 = SymbolTable({'y': ValueHolder(3)})
