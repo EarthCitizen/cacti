@@ -1,4 +1,5 @@
 import pytest
+from cacti.builtin import *
 from cacti.lang import *
 
 class TestValueHolder:
@@ -19,6 +20,83 @@ class TestConstantValueHolder:
         with pytest.raises(ConstantValueError):
             holder = ConstantValueHolder(123)
             holder.value = 456
+            
+class TestPropertyGetSetValueHolder:
+    def test_getter_executed(self):
+        c1 = SymbolTable()
+        c1.add_symbol('x', ConstantValueHolder(5))
+        c1.add_symbol('y', ConstantValueHolder(6))
+        c1.add_symbol('z', ConstantValueHolder(7))
+         
+        def multiply_values(context):
+            return context['x'] * context['y'] * context['z']
+        
+        _callable = Callable(multiply_values)
+         
+        bound_get = BoundCallable(_callable, c1)
+        
+        _property = PropertyGetSetValueHolder(bound_get, None)
+        
+        assert 210 == _property.get_value()
+     
+    def test_setter_executed(self):
+        c1 = SymbolTable()
+        c1.add_symbol('x', ValueHolder(5))
+        
+        def get_value(context):
+            return context['x']
+        
+        get_callable = Callable(get_value)
+        
+        bound_get = BoundCallable(get_callable, c1)
+        
+        def set_value(context):
+            context['x'] = context['value']
+        
+        set_callable = Callable(set_value)
+        set_callable.add_param('value')
+         
+        bound_set = BoundCallable(set_callable, c1)
+        
+        _property = PropertyGetSetValueHolder(bound_get, bound_set)
+        _property.set_value(100)
+        
+        assert 100 == _property.get_value()
+        
+class TestPropertyGetValueHolder:
+    def test_getter_executed(self):
+        c1 = SymbolTable()
+        c1.add_symbol('x', ConstantValueHolder(5))
+        c1.add_symbol('y', ConstantValueHolder(6))
+        c1.add_symbol('z', ConstantValueHolder(7))
+         
+        def multiply_values(context):
+            return context['x'] * context['y'] * context['z']
+        
+        _callable = Callable(multiply_values)
+         
+        bound_get = BoundCallable(_callable, c1)
+        
+        _property = PropertyGetValueHolder(bound_get)
+        
+        assert 210 == _property.get_value()
+     
+    def test_setter_throws_constant_error(self):
+        c1 = SymbolTable()
+        c1.add_symbol('x', ValueHolder(5))
+        
+        def get_value(context):
+            return context['x']
+        
+        get_callable = Callable(get_value)
+        
+        bound_get = BoundCallable(get_callable, c1)
+        
+        _property = PropertyGetValueHolder(bound_get)
+        
+        with pytest.raises(ConstantValueError):
+            _property.set_value(100)
+
             
 class TestIsValidSymbol:
     
@@ -111,6 +189,14 @@ class TestSymbolTableChain:
     def test_chain_elements_must_be_symbol_tables(self):
         with pytest.raises(TypeError):
             SymbolTableChain(1)
+            
+    def test_accepts_symbol_table(self):
+        st = SymbolTable()
+        SymbolTableChain(st)
+        
+    def test_accepts_symbol_table_chain(self):
+        stc = SymbolTableChain()
+        SymbolTableChain(stc)
     
     def test_gets_value_from_chain(self):
         t1 = SymbolTable({'x': ValueHolder(4)})
@@ -133,3 +219,17 @@ class TestSymbolTableChain:
         chain = SymbolTableChain(t3, t2, t1)
         chain['x'] = 16
         assert 16 == chain['x']
+        
+    def test_contains_true(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        chain = SymbolTableChain(t3, t2, t1)
+        assert True == ('x' in chain)
+    
+    def test_contains_false(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        chain = SymbolTableChain(t3, t2, t1)
+        assert False == ('c' in chain)

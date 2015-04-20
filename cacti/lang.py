@@ -6,7 +6,7 @@ __all__ = [
            'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
            
            # Classes
-           'ConstantValueHolder', 'SymbolTable', 'SymbolTableChain', 'ValueHolder'
+           'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'ValueHolder'
            ]
 
 import re
@@ -27,7 +27,7 @@ class ValueHolder:
         return str(self)
         
     def __str__(self):
-        return self.__class__.__name__ + "(" + str(self.__value) + ")"
+        return self.__class__.__name__ + "(" + str(self.value) + ")"
     
     value = property(get_value, set_value)
 
@@ -38,12 +38,29 @@ class ConstantValueHolder(ValueHolder):
     
     value = property(ValueHolder.get_value, set_value)
     
-class PropertyValueHolder(ValueHolder):
-    def __init__(self, get_method, set_method):
-        pass
+class PropertyGetSetValueHolder(ValueHolder):
+    def __init__(self, getter, setter):
+        self.__get = getter
+        self.__set = setter
+    
+    def get_value(self):
+        return self.__get.call()
+    
+    def set_value(self, value):
+        self.__set.call(value)
+    
+    value = property(get_value, set_value)
 
-class ReadOnlyPropertyValueHolder(PropertyValueHolder):
-    pass
+class PropertyGetValueHolder(ConstantValueHolder):
+    def __init__(self, getter):
+        self.__get = getter
+    
+    def get_value(self):
+        return self.__get.call()
+    
+    value = property(get_value,ConstantValueHolder.set_value)
+    
+
 
 class SymbolError(Exception): pass
 
@@ -121,7 +138,7 @@ class SymbolTable:
 class SymbolTableChain:
     def __init__(self, *context_chain):
         for t in context_chain:
-            if not isinstance(t, SymbolTable):
+            if not isinstance(t, SymbolTable) and not isinstance(t, SymbolTableChain):
                 raise TypeError("All elements in the chain must be a 'SymbolTable'")
         
         self.__chain = context_chain
@@ -129,6 +146,13 @@ class SymbolTableChain:
     @property
     def chain(self):
         return self.__chain
+    
+    def __contains__(self, symbol_name):
+        for table in self.__chain:
+            if symbol_name in table:
+                return True
+            
+        return False
     
     def __getitem__(self, symbol_name):
         for table in self.__chain:

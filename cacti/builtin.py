@@ -2,10 +2,9 @@ from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder, SymbolTabl
 
 __all__ = [
            # Classes
-           'Callable'
+           'BoundCallable', 'Callable'
            ]
            
-           #, 'Class', 'Function', 'Method', 'Object', 'PyMethod', 'Trait', 'TypeDefinition']
 
 BUILTIN_SYMBOLS = SymbolTable()
 
@@ -48,7 +47,7 @@ class Object:
         const_value = ConstantValueHolder(MethodBinding(self.__symbol_context, method))
         self.__property_table.add_symbol(method_name, const_value)
         
-    def add_property(self, property_name, get, set):
+    def add_property(self, property_name, _get, _set):
         pass
     
     def get_property(self, property_name):
@@ -170,9 +169,17 @@ class Callable:
     def call(self, context, *param_values):
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
-        call_context = SymbolTableChain(param_table, *context.chain)
+        call_context = SymbolTableChain(param_table, context)
         return self.__content(call_context)
-    
+
+class BoundCallable(Object):
+    def __init__(self, __callable, context):
+        self.__callable = __callable
+        self.__context = context
+        
+    def call(self, *params):
+        return self.__callable.call(self.__context, *params)
+
 class MethodBinding(Callable):
     def __init__(self, symbol_context, method):
         self.__symbol_context = symbol_context
