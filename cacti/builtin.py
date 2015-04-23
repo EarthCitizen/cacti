@@ -1,4 +1,5 @@
-from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder, SymbolTableChain
+from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder, SymbolTableChain,\
+    PropertyGetValueHolder
 
 __all__ = [
            # Classes
@@ -21,21 +22,46 @@ class UnknownPropertyError(Exception): pass
 class ArityError(Exception): pass
 
 def get_object():
-    return Object(get_type_definition('Object'), None)
+    return ObjectDefinition(get_type_definition('ObjectDefinition'), None)
 
-# All Object Instances Have This
-class Object:
+
+# All ObjectDefinition Instances Have This
+class ObjectDefinition:
     def __init__(self, type_def, superclass):
         self.__type_def = type_def
         self.__superclass = superclass
         self.__field_table = SymbolTable()
-        self.__hook_table = SymbolTable(parent_table=super.__hook_table)
-        self.__property_table = SymbolTable(parent_table=super.__property_table)
-        self_symbol = SymbolTable(from_dict={'self': self, 'super': superclass})
-        self.__symbol_context = SymbolTableChain(self_symbol, self.__field_table, BUILTIN_SYMBOLS)
         
-    def add_hook(self, hook_name, hook_value):
-        self.__hook_table.add_symbol(hook_name, ConstantValueHolder(hook_value))
+        parent_hook_table = superclass.hook_context if superclass else None
+        self.__hook_table = SymbolTable(parent_table=parent_hook_table)
+        
+        parent_property_table = superclass.public_context if superclass else None
+        self.__property_table = SymbolTable(parent_table=parent_property_table)
+        
+        self.__self_context = SymbolTableChain(self.__property_table, self.__field_table)
+        self.__super_context = superclass.public_context if superclass else SymbolTable()
+        
+        self.__private_context = SymbolTable({'self': self.__self_context, 'super': self.__super_context})
+        
+    @property
+    def hook_context(self):
+        return self.__hook_table
+    
+    @property
+    def public_context(self):
+        return self.__public_context
+    
+    @property
+    def self_context(self):
+        return self.__self_context
+    
+    @property
+    def super_context(self):
+        return self.__super_context
+        
+    def add_hook(self, hook_name, hook_callable):
+        bound_callable = BoundCallable(hook_callable, self.__private_context)
+        self.__hook_table.add_symbol(hook_name, ConstantValueHolder(bound_callable))
     
     def add_val(self, val_name, val_value):
         self.__field_table.add_symbol(val_name, ConstantValueHolder(val_value))
@@ -43,12 +69,27 @@ class Object:
     def add_var(self, var_name, var_value):
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
-    def add_method(self, method_name, method):
-        const_value = ConstantValueHolder(MethodBinding(self.__symbol_context, method))
+    def add_method(self, method_name, method_callable):
+        bound_callable = BoundCallable(method_callable, self.__private_context)
+        method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
+        method.add_hook('()', bound_callable)
+        const_value = ConstantValueHolder(method)
         self.__property_table.add_symbol(method_name, const_value)
         
-    def add_property(self, property_name, _get, _set):
-        pass
+    def add_property(self, property_name, get_callable, set_callable):
+        value_holder = None
+        private_context = self.__private_context
+        
+        if get_callable is None and set_callable is None:
+            value_holder = ValueHolder()
+        elif get_callable is not None and set_callable is not None:
+            value_holder = PropertyGetValueHolder(BoundCallable(get_callable, private_context))
+        elif get_callable is not None and set_callable is None:
+            value_holder = PropertyGetValueHolder(BoundCallable(get_callable, private_context), BoundCallable(set_callable, private_context))
+        else:
+            raise Exception('TBD')
+        
+        self.__property_table.add_symbol(property_name, value_holder)
     
     def get_property(self, property_name):
         self.__property_table[property_name]
@@ -75,9 +116,27 @@ class Object:
     #def __str__(self):
     #    return self.to_string()
     
-
+class TypeDefinition(ObjectDefinition):
+    def __init__(self, type_def, superclass, type_name):
+        super().__init__(type_def, superclass)
+        self.__type_name = type_name
     
-# class TypeDefinition(Object):
+OBJECT = ObjectDefinition.__new__(ObjectDefinition)
+OBJECT_TYPEDEF = TypeDefinition.__new__(TypeDefinition)
+
+OBJECT.__init__(OBJECT_TYPEDEF, None)
+OBJECT_TYPEDEF.__init__(OBJECT_TYPEDEF, OBJECT, 'TypeDefinition')
+
+METHOD_TYPEDEF = TypeDefinition(OBJECT_TYPEDEF, OBJECT, 'Method')
+
+def make_method(method_bound_callable):
+    method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
+    method.add_hook('()', method_bound_callable)
+    return method
+
+        
+    
+# class TypeDefinition(ObjectDefinition):
 #     def __init__(self, type_name):
 #         # If type_name is TypeDefinition
 #         # then type property will be a
@@ -145,15 +204,15 @@ class Object:
 #         parent_instance = None
 #         if self.__base_class:
 #             parent_instance = self.__base_class.new()
-#         return Object(self, parent_instance)
+#         return ObjectDefinition(self, parent_instance)
     
 class Callable:
-    def __init__(self, content):
-        self.__params = []
+    def __init__(self, content, *params):
+        self.__params = params
         self.__content = content
-        
-    def add_param(self, param_name):
-        self.__params += [param_name]
+#         
+#     def add_param(self, param_name):
+#         self.__params += [param_name]
         
     def __check_arity(self, *param_values):
         if len(self.__params) != len(param_values):
@@ -172,7 +231,7 @@ class Callable:
         call_context = SymbolTableChain(param_table, context)
         return self.__content(call_context)
 
-class BoundCallable(Object):
+class BoundCallable(ObjectDefinition):
     def __init__(self, __callable, context):
         self.__callable = __callable
         self.__context = context
@@ -189,7 +248,7 @@ class MethodBinding(Callable):
         return self.__method.__getattr__(self.__method, name)
 
     
-# class Callable(Object):
+# class Callable(ObjectDefinition):
 #     def __init__(self, type_def, name, *param_names):
 #         super().__init__(type_def, get_object())
 #         self.__name = name
@@ -289,12 +348,12 @@ class MethodBinding(Callable):
 # 
 # 
 # object_type = TypeDefinition.__new__(TypeDefinition)
-# register_type_definition(object_type, 'Object')
+# register_type_definition(object_type, 'ObjectDefinition')
 # 
 # type_definition = TypeDefinition.__new__(TypeDefinition)
 # register_type_definition(type_definition, 'TypeDefinition')
 # 
-# object_type.__init__('Object')
+# object_type.__init__('ObjectDefinition')
 # type_definition.__init__('TypeDefinition')
 # 
 # method = TypeDefinition('Method')
