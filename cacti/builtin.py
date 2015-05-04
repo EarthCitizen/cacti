@@ -229,7 +229,8 @@ class Callable:
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
         call_context = SymbolTableChain(param_table, context)
-        return self.__content(call_context)
+        return_value = self.__content(call_context)
+        return return_value
 
 class BoundCallable(ObjectDefinition):
     def __init__(self, __callable, context):

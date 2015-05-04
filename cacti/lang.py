@@ -2,6 +2,9 @@ __all__ = [
            # Functions
            'isvalidsymbol',
            
+           # Globals
+           'CALLSTACK',
+           
            # Exceptions
            'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
            
@@ -10,6 +13,22 @@ __all__ = [
            ]
 
 import re
+import collections
+
+CALLSTACK = collections.deque()
+
+class CallInfo:
+    def __init__(self, authority, caller):
+        self.__authority = authority
+        self.__caller = caller
+    
+    @property
+    def authority(self):
+        return self.__authority
+    
+    @property
+    def caller(self):
+        return self.__caller
 
 class ConstantValueError(Exception): pass
 
