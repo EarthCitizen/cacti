@@ -1,5 +1,5 @@
 from cacti.lang import SymbolTable, ConstantValueHolder, ValueHolder, SymbolTableChain,\
-    PropertyGetValueHolder
+    PropertyGetValueHolder, peek_call, pop_call, push_call
 
 __all__ = [
            # Classes
@@ -225,15 +225,17 @@ class Callable:
             param_table.add_symbol(v, ConstantValueHolder(next(param_iter)))
         return param_table
     
-    def call(self, context, *param_values):
+    def call(self, call_info, context, *param_values):
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
         call_context = SymbolTableChain(param_table, context)
+        push_call(call_info)
         return_value = self.__content(call_context)
+        pop_call()
         return return_value
 
 class BoundCallable(ObjectDefinition):
-    def __init__(self, __callable, context):
+    def __init__(self, owner, __callable, context):
         self.__callable = __callable
         self.__context = context
         

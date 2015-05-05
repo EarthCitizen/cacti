@@ -1,6 +1,6 @@
 __all__ = [
            # Functions
-           'isvalidsymbol',
+           'isvalidsymbol', 'peek_call', 'pop_call', 'push_call',
            
            # Globals
            'CALLSTACK',
@@ -9,7 +9,7 @@ __all__ = [
            'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
            
            # Classes
-           'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'ValueHolder'
+           'CallEnv', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'ValueHolder'
            ]
 
 import re
@@ -17,18 +17,27 @@ import collections
 
 CALLSTACK = collections.deque()
 
-class CallInfo:
-    def __init__(self, authority, caller):
-        self.__authority = authority
-        self.__caller = caller
+def push_call(call_info):
+    CALLSTACK.appendleft(call_info)
+    
+def peek_call(pos=0):
+    return CALLSTACK[pos]
+    
+def pop_call():
+    return CALLSTACK.popleft();
+
+class CallEnv:
+    def __init__(self, scope_owner, name):
+        self.__scope_owner = scope_owner
+        self.__name = name
     
     @property
-    def authority(self):
-        return self.__authority
-    
+    def scope_owner(self):
+        return self.__scope_owner
+        
     @property
-    def caller(self):
-        return self.__caller
+    def name(self):
+        return self.__name
 
 class ConstantValueError(Exception): pass
 
