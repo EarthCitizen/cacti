@@ -2,9 +2,6 @@ __all__ = [
            # Functions
            'isvalidsymbol', 'peek_call', 'pop_call', 'push_call',
            
-           # Globals
-           'CALLSTACK',
-           
            # Exceptions
            'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
            
@@ -15,16 +12,16 @@ __all__ = [
 import re
 import collections
 
-CALLSTACK = collections.deque()
+CALL_ENV_STACK = collections.deque()
 
-def push_call(call_info):
-    CALLSTACK.appendleft(call_info)
+def push_call_env(call_info):
+    CALL_ENV_STACK.appendleft(call_info)
     
-def peek_call(pos=0):
-    return CALLSTACK[pos]
+def peek_call_env(pos=0):
+    return CALL_ENV_STACK[pos]
     
-def pop_call():
-    return CALLSTACK.popleft();
+def pop_call_env():
+    return CALL_ENV_STACK.popleft();
 
 class CallEnv:
     def __init__(self, scope_owner, name):
