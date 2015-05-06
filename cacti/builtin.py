@@ -121,18 +121,18 @@ class TypeDefinition(ObjectDefinition):
         super().__init__(type_def, superclass)
         self.__type_name = type_name
     
-OBJECT = ObjectDefinition.__new__(ObjectDefinition)
-OBJECT_TYPEDEF = TypeDefinition.__new__(TypeDefinition)
+#OBJECT = ObjectDefinition.__new__(ObjectDefinition)
+#OBJECT_TYPEDEF = TypeDefinition.__new__(TypeDefinition)
 
-OBJECT.__init__(OBJECT_TYPEDEF, None)
-OBJECT_TYPEDEF.__init__(OBJECT_TYPEDEF, OBJECT, 'TypeDefinition')
+#OBJECT.__init__(OBJECT_TYPEDEF, None)
+#OBJECT_TYPEDEF.__init__(OBJECT_TYPEDEF, OBJECT, 'TypeDefinition')
 
-METHOD_TYPEDEF = TypeDefinition(OBJECT_TYPEDEF, OBJECT, 'Method')
+#METHOD_TYPEDEF = TypeDefinition(OBJECT_TYPEDEF, OBJECT, 'Method')
 
-def make_method(method_bound_callable):
-    method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
-    method.add_hook('()', method_bound_callable)
-    return method
+#def make_method(method_bound_callable):
+#    method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
+#    method.add_hook('()', method_bound_callable)
+#    return method
 
         
     
@@ -225,19 +225,20 @@ class Callable:
             param_table.add_symbol(v, ConstantValueHolder(next(param_iter)))
         return param_table
     
-    def call(self, call_info, context, *param_values):
+    def call(self, context, *param_values):
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
         call_context = SymbolTableChain(param_table, context)
-        push_call(call_info)
+        #push_call(call_info)
         return_value = self.__content(call_context)
-        pop_call()
+        #pop_call()
         return return_value
 
 class BoundCallable(ObjectDefinition):
-    def __init__(self, owner, __callable, context):
+    def __init__(self, __callable, context):
         self.__callable = __callable
         self.__context = context
+        #self.__call_info = CallInfo(
         
     def call(self, *params):
         return self.__callable.call(self.__context, *params)

@@ -2,26 +2,29 @@ __all__ = [
            # Functions
            'isvalidsymbol', 'peek_call', 'pop_call', 'push_call',
            
+           # Globals
+           'CALLSTACK',
+           
            # Exceptions
            'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
            
            # Classes
-           'CallEnv', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'ValueHolder'
+           'CallEnv', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder'
            ]
 
 import re
 import collections
 
-CALL_ENV_STACK = collections.deque()
+CALLSTACK = collections.deque()
 
-def push_call_env(call_info):
-    CALL_ENV_STACK.appendleft(call_info)
+def push_call(call_info):
+    CALLSTACK.appendleft(call_info)
     
-def peek_call_env(pos=0):
-    return CALL_ENV_STACK[pos]
+def peek_call(pos=0):
+    return CALLSTACK[pos]
     
-def pop_call_env():
-    return CALL_ENV_STACK.popleft();
+def pop_call():
+    return CALLSTACK.popleft();
 
 class CallEnv:
     def __init__(self, scope_owner, name):
@@ -200,3 +203,41 @@ class SymbolTableChain:
     def __str__(self):
         return self.__class__.__name__ + "(" + str(self.__chain) + ")"
             
+
+class SymbolTableStack:
+    def __init__(self):
+        self.__stack = collections.deque()
+        
+    def push(self, table):
+        self.__stack.appendleft(table)
+        
+    def pop(self):
+        self.__stack.popleft()
+        
+    def __contains__(self, symbol_name):
+        for table in self.__stack:
+            if symbol_name in table:
+                return True
+            
+        return False
+        
+    def __getitem__(self, symbol_name):
+        for table in self.__stack:
+            if symbol_name in table:
+                return table[symbol_name]
+                 
+        raise SymbolUnknownError(symbol_name)
+    
+    def __setitem__(self, symbol_name, symbol_value):
+        for table in self.__stack:
+            if symbol_name in table:
+                table[symbol_name] = symbol_value
+                return
+                 
+        raise SymbolUnknownError(symbol_name)
+    
+    def __repr__(self):
+        return str(self)
+    
+    def __str__(self):
+        return self.__class__.__name__ + "(" + str(self.__stack) + ")"

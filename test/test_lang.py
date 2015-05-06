@@ -53,8 +53,8 @@ class TestPropertyGetSetValueHolder:
         def set_value(context):
             context['x'] = context['value']
         
-        set_callable = Callable(set_value)
-        set_callable.add_param('value')
+        set_callable = Callable(set_value, 'value')
+        #set_callable.add_param('value')
          
         bound_set = BoundCallable(set_callable, c1)
         
@@ -233,3 +233,56 @@ class TestSymbolTableChain:
         t3 = SymbolTable({'z': ValueHolder(2)})
         chain = SymbolTableChain(t3, t2, t1)
         assert False == ('c' in chain)
+
+class TestSymbolTableStack:
+    
+    def test_gets_value_from_stack(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        stack = SymbolTableStack()
+        stack.push(t1)
+        stack.push(t2)
+        stack.push(t3)
+        assert 4 == stack['x']
+        
+    def test_gets_value_from_front_of_stack(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'x': ValueHolder(2)})
+        stack = SymbolTableStack()
+        stack.push(t1)
+        stack.push(t2)
+        stack.push(t3)
+        assert 2 == stack['x']
+
+    def test_sets_value_in_stack(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        stack = SymbolTableStack()
+        stack.push(t1)
+        stack.push(t2)
+        stack.push(t3)
+        stack['x'] = 16
+        assert 16 == stack['x']
+        
+    def test_contains_true(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        stack = SymbolTableStack()
+        stack.push(t1)
+        stack.push(t2)
+        stack.push(t3)
+        assert True == ('x' in stack)
+    
+    def test_contains_false(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        stack = SymbolTableStack()
+        stack.push(t1)
+        stack.push(t2)
+        stack.push(t3)
+        assert False == ('c' in stack)
