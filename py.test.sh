@@ -1,2 +1,2 @@
-PYTHONPATH=. py.test
+PYTHONPATH=. py.test $@
 
