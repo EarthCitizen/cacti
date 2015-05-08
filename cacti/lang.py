@@ -39,9 +39,9 @@ class ObjectDefinition:
         parent_property_table = superclass.property_table if superclass else None
         self.__property_table = SymbolTable(parent_table=parent_property_table)
         
-        self.__self_context = SymbolTableChain(self.__property_table, self.__field_table)
+        self.__public_table = self.__property_table
         
-        self.__private_context = None #SymbolTable({'self': self.__self_context, 'super': self.__super_context})
+        self.__private_table = SymbolTableChain(self.__property_table, self.__field_table)
         
     @property
     def hook_table(self):
@@ -51,21 +51,13 @@ class ObjectDefinition:
     def property_table(self):
         return self.__property_table
     
-    #@property
-    #def public_context(self):
-    #    return self.__public_context
-    
-    @property
-    def self_context(self):
-        return self.__self_context
-    
-    @property
-    def super_context(self):
-        return self.__super_context
-        
     @property
     def superclass(self):
         return self.__superclass
+        
+    @property
+    def type_def(self):
+        return self.__type_def
         
     def add_hook(self, hook_name, hook_callable):
         binding = MethodBinding(self, hook_name, hook_callable)
@@ -128,6 +120,10 @@ class TypeDefinition(ObjectDefinition):
     def __init__(self, type_def, superclass, type_name):
         super().__init__(type_def, superclass)
         self.__type_name = type_name
+        
+    @property
+    def name(self):
+        return self.__type_name
     
 #OBJECT = ObjectDefinition.__new__(ObjectDefinition)
 #OBJECT_TYPEDEF = TypeDefinition.__new__(TypeDefinition)
