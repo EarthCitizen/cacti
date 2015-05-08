@@ -1,4 +1,4 @@
-from cacti.lang import *
+from cacti.runtime import *
 
 __all__ = [
            # Classes
