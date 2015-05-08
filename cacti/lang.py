@@ -1,243 +1,480 @@
+from cacti.lang import *
+
 __all__ = [
-           # Functions
-           'isvalidsymbol', 'peek_call', 'pop_call', 'push_call',
-           
-           # Globals
-           'CALLSTACK',
-           
-           # Exceptions
-           'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
-           
            # Classes
-           'CallEnv', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder'
+           'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding', 'ObjectDefinition', 'TypeDefinition'
            ]
+           
 
-import re
-import collections
+#print('EXECUTING BUILTIN')
 
-CALLSTACK = collections.deque()
+BUILTIN_SYMBOLS = SymbolTable()
 
-def push_call(call_info):
-    CALLSTACK.appendleft(call_info)
-    
-def peek_call(pos=0):
-    return CALLSTACK[pos]
-    
-def pop_call():
-    return CALLSTACK.popleft();
+def register_type_definition(type_def, name):
+    BUILTIN_SYMBOLS[name] = ConstantValueHolder(type_def)
 
-class CallEnv:
-    def __init__(self, scope_owner, name):
-        self.__scope_owner = scope_owner
-        self.__name = name
-    
-    @property
-    def scope_owner(self):
-        return self.__scope_owner
+def get_type_definition(name):
+    return BUILTIN_SYMBOLS[name].get_value()
+
+class UnsupportedMethodError(Exception): pass
+
+class UnknownPropertyError(Exception): pass
+
+class ArityError(Exception): pass
+
+def get_object():
+    return ObjectDefinition(get_type_definition('ObjectDefinition'), None)
+
+
+# All ObjectDefinition Instances Have This
+class ObjectDefinition:
+    def __init__(self, type_def, superclass):
+        self.__type_def = type_def
+        self.__superclass = superclass
+        self.__field_table = SymbolTable()
+        
+        parent_hook_table = superclass.hook_table if superclass else None
+        self.__hook_table = SymbolTable(parent_table=parent_hook_table, symbol_validator=isvalidhook)
+        
+        parent_property_table = superclass.property_table if superclass else None
+        self.__property_table = SymbolTable(parent_table=parent_property_table)
+        
+        self.__self_context = SymbolTableChain(self.__property_table, self.__field_table)
+        
+        self.__private_context = None #SymbolTable({'self': self.__self_context, 'super': self.__super_context})
         
     @property
-    def name(self):
-        return self.__name
-
-class ConstantValueError(Exception): pass
-
-class ValueHolder:
-    def __init__(self, value):
-        self.__value = value
+    def hook_table(self):
+        return self.__hook_table
         
-    def get_value(self):
-        return self.__value
+    @property
+    def property_table(self):
+        return self.__property_table
     
-    def set_value(self, value):
-        self.__value = value
-        
-    def __repr__(self):
-        return str(self)
-        
-    def __str__(self):
-        return self.__class__.__name__ + "(" + str(self.value) + ")"
+    #@property
+    #def public_context(self):
+    #    return self.__public_context
     
-    value = property(get_value, set_value)
-
-
-class ConstantValueHolder(ValueHolder):
-    def set_value(self, value):
-        raise ConstantValueError()
+    @property
+    def self_context(self):
+        return self.__self_context
     
-    value = property(ValueHolder.get_value, set_value)
+    @property
+    def super_context(self):
+        return self.__super_context
+        
+    @property
+    def superclass(self):
+        return self.__superclass
+        
+    def add_hook(self, hook_name, hook_callable):
+        binding = MethodBinding(self, hook_name, hook_callable)
+        self.__hook_table.add_symbol(hook_name, ConstantValueHolder(binding))
     
-class PropertyGetSetValueHolder(ValueHolder):
-    def __init__(self, getter, setter):
-        self.__get = getter
-        self.__set = setter
+    def add_val(self, val_name, val_value):
+        self.__field_table.add_symbol(val_name, ConstantValueHolder(val_value))
     
-    def get_value(self):
-        return self.__get.call()
-    
-    def set_value(self, value):
-        self.__set.call(value)
-    
-    value = property(get_value, set_value)
-
-class PropertyGetValueHolder(ConstantValueHolder):
-    def __init__(self, getter):
-        self.__get = getter
-    
-    def get_value(self):
-        return self.__get.call()
-    
-    value = property(get_value,ConstantValueHolder.set_value)
-    
-
-
-class SymbolError(Exception): pass
-
-class SymbolContentError(SymbolError): pass
-
-class SymbolUnknownError(SymbolError):
-    def __init__(self, symbol_name):
-        super().__init__("Unknown symbol '{}'".format(symbol_name))
-
-__VALID_SYMBOL_PATTERN__ = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
-
-def isvalidsymbol(symbol):
-    return True if isinstance(symbol, str) and __VALID_SYMBOL_PATTERN__.match(symbol) else False
-
-
-class SymbolTable:
-    def __init__(self, from_dict={}, parent_table=None):
-        if not isinstance(from_dict, dict):
-            raise TypeError("from_map must be a 'dict'")
+    def add_var(self, var_name, var_value):
+        self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
-        self.__table = {}
+    def add_method(self, method_name, method_callable):
+        bound_callable = BoundCallable(method_callable, self.__private_context)
+        method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
+        method.add_hook('()', bound_callable)
+        const_value = ConstantValueHolder(method)
+        self.__property_table.add_symbol(method_name, const_value)
         
-        for symbol,  content in from_dict.items():
-            self.add_symbol(symbol, content)
+    def add_property(self, property_name, get_callable, set_callable):
+        value_holder = None
+        private_context = self.__private_context
         
-        if parent_table and (not isinstance(parent_table, SymbolTable)):
-            raise TypeError("parent_table must be a 'SymbolTable'")
-        
-        self.__parent_table = parent_table
-        
-    def add_symbol(self, symbol, content):
-        self.__check_symbol(symbol)
-        self.__check_content(content)
-        self.__table[symbol] = content
-        
-    def __check_symbol(self, symbol):
-        if not isvalidsymbol(symbol):
-            raise SymbolError("Invalid symbol '{}'".format(symbol))
-        
-    def __check_content(self, symbol_content):
-        if not isinstance(symbol_content, ValueHolder):
-            raise SymbolContentError("Symbol content must be a 'ValueHolder'")
-        
-    def __contains__(self, key):
-        if key in self.__table.keys():
-            return True
-        if self.__parent_table:
-            return key in self.__parent_table
-        
-        return False
-        
-    def __getitem__(self, key):
-        if key in self.__table.keys():
-            return self.__table[key].value
-        if self.__parent_table:
-            return self.__parent_table[key]
-        
-        raise SymbolUnknownError(key)
-        
-    def __setitem__(self, key, value):
-        if key in self.__table.keys():
-            self.__table[key].value = value
-        elif self.__parent_table:
-            self.__parent_table[key] = value
+        if get_callable is None and set_callable is None:
+            value_holder = ValueHolder()
+        elif get_callable is not None and set_callable is not None:
+            value_holder = PropertyGetValueHolder(BoundCallable(get_callable, private_context))
+        elif get_callable is not None and set_callable is None:
+            value_holder = PropertyGetValueHolder(BoundCallable(get_callable, private_context), BoundCallable(set_callable, private_context))
         else:
-            raise SymbolUnknownError(key)
+            raise Exception('TBD')
         
-    def __repr__(self):
-        return str(self)
+        self.__property_table.add_symbol(property_name, value_holder)
+    
+    def get_property(self, property_name):
+        self.__property_table[property_name]
         
-    def __str__(self):
-        return self.__class__.__name__ + "(" + str(self.__table) + ", parent_table="+ str(self.__parent_table) + ")"
+    def set_property(self, property_name, property_value):
+        self.__property_table[property_name] = property_value
+    
+        
+    #@property
+    #def id(self):
+    #    return id(self)
+        
+    #def to_string(self):
+    #    return "<{}>".format(self.type.name)
+        
+    #@property
+    #def type(self):
+    #    return self.__type_def
+        
+    #@property
+    #def super(self):
+    #    return self.__superclass
+    
+    #def __str__(self):
+    #    return self.to_string()
+    
+class TypeDefinition(ObjectDefinition):
+    def __init__(self, type_def, superclass, type_name):
+        super().__init__(type_def, superclass)
+        self.__type_name = type_name
+    
+#OBJECT = ObjectDefinition.__new__(ObjectDefinition)
+#OBJECT_TYPEDEF = TypeDefinition.__new__(TypeDefinition)
 
+#OBJECT.__init__(OBJECT_TYPEDEF, None)
+#OBJECT_TYPEDEF.__init__(OBJECT_TYPEDEF, OBJECT, 'TypeDefinition')
 
-class SymbolTableChain:
-    def __init__(self, *context_chain):
-        for t in context_chain:
-            if not isinstance(t, SymbolTable) and not isinstance(t, SymbolTableChain):
-                raise TypeError("All elements in the chain must be a 'SymbolTable'")
-        
-        self.__chain = context_chain
-        
-    @property
-    def chain(self):
-        return self.__chain
-    
-    def __contains__(self, symbol_name):
-        for table in self.__chain:
-            if symbol_name in table:
-                return True
-            
-        return False
-    
-    def __getitem__(self, symbol_name):
-        for table in self.__chain:
-            if symbol_name in table:
-                return table[symbol_name]
-                 
-        raise SymbolUnknownError(symbol_name)
-    
-    def __setitem__(self, symbol_name, symbol_value):
-        for table in self.__chain:
-            if symbol_name in table:
-                table[symbol_name] = symbol_value
-                return
-                 
-        raise SymbolUnknownError(symbol_name)
-    
-    def __repr__(self):
-        return str(self)
-    
-    def __str__(self):
-        return self.__class__.__name__ + "(" + str(self.__chain) + ")"
-            
+#METHOD_TYPEDEF = TypeDefinition(OBJECT_TYPEDEF, OBJECT, 'Method')
 
-class SymbolTableStack:
-    def __init__(self):
-        self.__stack = collections.deque()
+#def make_method(method_bound_callable):
+#    method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
+#    method.add_hook('()', method_bound_callable)
+#    return method
+
         
-    def push(self, table):
-        self.__stack.appendleft(table)
-        
-    def pop(self):
-        self.__stack.popleft()
-        
-    def __contains__(self, symbol_name):
-        for table in self.__stack:
-            if symbol_name in table:
-                return True
-            
-        return False
-        
-    def __getitem__(self, symbol_name):
-        for table in self.__stack:
-            if symbol_name in table:
-                return table[symbol_name]
-                 
-        raise SymbolUnknownError(symbol_name)
     
-    def __setitem__(self, symbol_name, symbol_value):
-        for table in self.__stack:
-            if symbol_name in table:
-                table[symbol_name] = symbol_value
-                return
-                 
-        raise SymbolUnknownError(symbol_name)
+# class TypeDefinition(ObjectDefinition):
+#     def __init__(self, type_name):
+#         # If type_name is TypeDefinition
+#         # then type property will be a
+#         # circular reference
+#         class_name = self.__class__.__name__
+#         if type_name == class_name:
+#             type_def = self
+#         else:
+#             type_def = get_type_definition(class_name)
+#         
+#         super().__init__(type_def, get_object())
+#         self.__methods = defaultdict(lambda: None)
+#         self.__type_name = type_name
+#         self.__final = False
+#         self.__property_table = SymbolTable()
+#         
+#     def add_property(self, property_name, property_value, constant=False):
+#         if constant:
+#             self.__property_table[property_name] = ConstantValueHolder(property_value)
+#         else:
+#             self.__property_table[property_name] = ValueHolder(property_value)
+#         
+#     @property
+#     def final(self):
+#         return self.__final
+#     
+#     @final.setter
+#     def final(self, value):
+#         self.__final = value
+#     
+#     @property
+#     def name(self):
+#         return self.__type_name
+#         
+#     def add_method(self, method):
+#         self.__methods[method.name] = method
+#         
+#     def has_method(self, method_name):
+#         return (method_name in self.__methods.keys())
+#     
+#     def get_method(self, name):
+#         return self.__methods[name]
+#     
+#     def to_string(self):
+#         return "<{} '{}'>".format(self.__class__.__name__, self.name)
     
-    def __repr__(self):
-        return str(self)
     
-    def __str__(self):
-        return self.__class__.__name__ + "(" + str(self.__stack) + ")"
+# class InheritingTypeDefintition(TypeDefinition):
+#     def __init__(self, type_name, parent_type_def):
+#         super().__init__(type_name)
+#         self.__parent_type_def = parent_type_def
+#         
+# class Trait(TypeDefinition):
+#     def __init__(self, trait_name, *traits):
+#         super().__init__(trait_name)
+#         self.__traits = traits        
+#     
+# class Class(TypeDefinition):
+#     def __init__(self, class_name, base_class, *traits):
+#         super().__init__(class_name)
+#         self.__traits = traits
+#         self.__base_class = base_class
+#         
+#     def new(self):
+#         parent_instance = None
+#         if self.__base_class:
+#             parent_instance = self.__base_class.new()
+#         return ObjectDefinition(self, parent_instance)
+
+    
+class Callable:
+    def __init__(self, content, *params):
+        self.__params = params
+        self.__content = content
+#         
+#     def add_param(self, param_name):
+#         self.__params += [param_name]
+        
+    def __check_arity(self, *param_values):
+        if len(self.__params) != len(param_values):
+            raise ArityError('Parameter count does not match')
+        
+    def __make_params_table(self, *param_values):
+        param_table = SymbolTable()
+        param_iter = iter(param_values)
+        for v in self.__params:
+            param_table.add_symbol(v, ConstantValueHolder(next(param_iter)))
+        return param_table
+    
+    def call(self, *param_values):
+        self.__check_arity(*param_values)
+        param_table = self.__make_params_table(*param_values)
+        call_env = peek_call_env()
+        symbol_stack = call_env.symbol_stack
+        symbol_stack.push(param_table)
+        return_value = self.__content()
+        symbol_stack.pop()
+        return return_value
+        
+class ClojureBinding:
+    def __init__(self, call_env, kallable):
+        self.__call_env = call_env
+        self.__callable = kallable
+        
+    def call(self, *params):
+        push_call_env(self.__call_env)
+        return_value = self.__callable.call(*params)
+        pop_call_env()
+        return return_value   
+
+class FunctionBinding:
+    def __init__(self, owner, name, kallable):
+        self.__owner = owner
+        self.__name = name
+        self.__callable = kallable
+        
+    def call(self, *params):
+        push_call_env(CallEnv(self.__owner, self.__name))
+        return_value = self.__callable.call(*params)
+        pop_call_env()
+        return return_value
+        
+class MethodBinding:
+    def __init__(self, owner, name, kallable):
+        self.__owner = owner
+        self.__name = name
+        self.__callable = kallable
+        
+    def call(self, *params):
+        push_call_env(CallEnv(self.__owner, self.__name))
+        super_self = SymbolTable()
+        super_self.add_symbol('self', ConstantValueHolder(self.__owner))
+        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superclass))
+        peek_call_env().symbol_stack.push(super_self)
+        return_value = self.__callable.call(*params)
+        pop_call_env()
+        return return_value
+
+class BoundCallable(ObjectDefinition):
+    def __init__(self, __callable, context):
+        self.__callable = __callable
+        self.__context = context
+        #self.__call_info = CallInfo(
+        
+    def call(self, *params):
+        return self.__callable.call(self.__context, *params)
+
+# class MethodBinding(Callable):
+#     def __init__(self, symbol_context, method):
+#         self.__symbol_context = symbol_context
+#         self.__method = method
+         
+#     def __getattr__(self, name):
+#         return self.__method.__getattr__(self.__method, name)
+
+    
+# class Callable(ObjectDefinition):
+#     def __init__(self, type_def, name, *param_names):
+#         super().__init__(type_def, get_object())
+#         self.__name = name
+#         self.__param_names = param_names
+#         
+#     def call(self, caller, *params):
+#         self.check_arity(caller, *params)
+#         
+#     def check_arity(self, caller, *called_params):
+#         if self.arity != len(called_params):
+#             kwargs = {'caller': caller.type.name, 'method_name': self.__name, 'exp': self.arity, 'got': len(called_params)}
+#             raise SyntaxError("{caller}.{method_name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
+#     
+#     @property
+#     def param_names(self):
+#         return self.__param_names
+#     
+#     @property
+#     def arity(self):
+#         return len(self.__param_names)
+#         
+#     @property
+#     def name(self):
+#         return self.__name
+#     
+#     def to_string(self):
+#         return "<{} '{}'>".format(self.type.name, self.name)
+    
+# class Method(Callable): pass
+
+# class Function(Callable): pass
+    
+# class PyMethod(Method):
+#     def __init__(self, method_name, function, *param_names):
+#         type_def = get_type_definition('Method')
+#         super().__init__(type_def, method_name, *param_names)
+#         self.__function = function
+#         
+#     def call(self, target, *params):
+#         super().call(target, *params)
+#         if self.__function:
+#             return self.__function(target, *params)
+#         
+# class TypeMethod(PyMethod):
+#     def __init__(self):
+#         super().__init__('type', lambda target: target.type)
+# 
+# class IdMethod(PyMethod):
+#     def __init__(self):
+#         super().__init__('id', lambda target: target.id)
+#         
+# class NameMethod(PyMethod):
+#     def __init__(self):
+#         super().__init__('name', lambda target: target.name)
+#         
+# class NewMethod(PyMethod):
+#     def __init__(self):
+#         super().__init__('new', lambda target, *params: target.get_instance(*params))
+#         
+# class ToStringMethod(PyMethod):
+#     def __init__(self):
+#         super().__init__('to_string', lambda target: target.to_string())
+#         
+# class SuperMethod(PyMethod):
+#     def __init__(self):
+#         super().__init__('super', lambda target: target.super)
+# 
+# class HasMethodMethod(PyMethod):
+#     def __init__(self):
+#         function = lambda target, *params: target.has_method(*params)
+#         param_names = ('method_name',)
+#         super().__init__('has_method', function, param_names)
+#         
+# class PyBinaryOpMethod(PyMethod):
+#     def __init__(self, method_name):
+#         lookup = {'+': lambda a, b: a+b, '-': lambda a, b: a-b, '*': lambda a, b: a*b, '/': lambda a, b: a/b}
+#         super().__init__(method_name, lookup[method_name], 'a', 'b')
+#         
+#     def call(self, caller, *params):
+#         super().call(self, *params)
+#         return self.__op_method(caller.raw_value, params[0].raw_value)
+#         
+# class PyFunction(Function):
+#     def __init__(self, function_name, function, *param_names):
+#         type_def = get_type_definition('Function')
+#         super().__init__(type_def, function_name, *param_names)
+#         self.__function = function
+#         
+#     def call(self, *params):
+#         super().call(self, *params)
+#         if self.__function:
+#             return self.__function(*params)
+#         
+# class SumFunction(PyFunction):
+#     def __init__(self):
+#         super().__init__('sum', lambda a, b, c: a + b + c, 'a', 'b', 'c')
+# 
+# 
+# object_type = TypeDefinition.__new__(TypeDefinition)
+# register_type_definition(object_type, 'ObjectDefinition')
+# 
+# type_definition = TypeDefinition.__new__(TypeDefinition)
+# register_type_definition(type_definition, 'TypeDefinition')
+# 
+# object_type.__init__('ObjectDefinition')
+# type_definition.__init__('TypeDefinition')
+# 
+# method = TypeDefinition('Method')
+# register_type_definition(method, method.name)
+# 
+# object_type.add_method(TypeMethod())
+# object_type.add_method(IdMethod())
+# object_type.add_method(ToStringMethod())
+# object_type.add_method(SuperMethod())
+# 
+# type_definition.add_method(TypeMethod())
+# type_definition.add_method(IdMethod())
+# type_definition.add_method(ToStringMethod())
+# 
+# method.add_method(NameMethod())
+# 
+# # FUNCTION
+# 
+# function = TypeDefinition('Function')
+# register_type_definition(function, function.name)
+# 
+# function.add_method(NameMethod())
+# 
+# # TRAIT
+# 
+# trait = TypeDefinition('Trait')
+# register_type_definition(trait, 'Trait')
+# 
+# trait.add_method(TypeMethod())
+# trait.add_method(IdMethod())
+# trait.add_method(ToStringMethod())
+# 
+# message_method = PyMethod('message', lambda target: 'The message is: ' + target.type.name)
+# 
+# foo_class = Class('Foo', None)
+# foo_class.add_method(message_method)
+# foo_inst = foo_class.new()
+# 
+# print(foo_class.to_string())
+# print(foo_inst.to_string())
+# 
+# some_class = Class('Some', foo_class)
+# some_inst = some_class.new()
+# 
+# print(some_class.to_string())
+# print(some_inst.to_string())
+# print(some_inst.call_method('message'))
+# print(some_inst.super.to_string())
+
+# number = TypeDefinition('Number')
+# register_type_definition(number)
+# 
+# number.add_method(PyBinaryOpMethod('+'))
+# number.add_method(PyBinaryOpMethod('-'))
+# number.add_method(PyBinaryOpMethod('*'))
+# number.add_method(PyBinaryOpMethod('/'))
+# 
+# sum_instance = SumFunction()
+
+#print(object_type.super.type.type.type.to_string())
+#print(BUILTIN_SYMBOLS)
+#print(number.to_string())
+#print(sum_instance.type.to_string())
+#print(IdMethod().type.to_string())
+#print(sum_instance.super.to_string())
+#print(sum_instance.call(1,2,3))
+#print(sum_instance.call_method('id'))
+#print(sum_instance.super.type.to_string())
+#print(number.to_string())
+#print(method.type.type)
+#print(method.type.name)
