@@ -12,8 +12,6 @@ __all__ = [
 import re
 import collections
 
-#print('EXECUTING LANG')
-
 CALL_ENV_STACK = collections.deque()
 
 def push_call_env(call_env):

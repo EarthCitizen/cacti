@@ -2,7 +2,7 @@ from cacti.runtime import *
 
 __all__ = [
            # Classes
-           'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding', 'ObjectDefinition', 'TypeDefinition'
+           'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding', 'ObjectDefinition'
            ]
            
 
@@ -28,8 +28,9 @@ def get_object():
 
 # All ObjectDefinition Instances Have This
 class ObjectDefinition:
-    def __init__(self, type_def, superclass):
+    def __init__(self, superclass, *, type_def=None, name=''):
         self.__type_def = type_def
+        self.__name = name
         self.__superclass = superclass
         self.__field_table = SymbolTable()
         
@@ -40,8 +41,10 @@ class ObjectDefinition:
         self.__property_table = SymbolTable(parent_table=parent_property_table)
         
         self.__public_table = self.__property_table
-        
         self.__private_table = SymbolTableChain(self.__property_table, self.__field_table)
+        
+    def set_type_def(self, type_def):
+        self.__type_def = type_def
         
     @property
     def hook_table(self):
@@ -58,6 +61,10 @@ class ObjectDefinition:
     @property
     def type_def(self):
         return self.__type_def
+        
+    @property
+    def name(self):
+        return self.__name
         
     def add_hook(self, hook_name, hook_callable):
         binding = MethodBinding(self, hook_name, hook_callable)
@@ -98,126 +105,63 @@ class ObjectDefinition:
         self.__property_table[property_name] = property_value
     
         
-    #@property
-    #def id(self):
-    #    return id(self)
-        
-    #def to_string(self):
-    #    return "<{}>".format(self.type.name)
-        
-    #@property
-    #def type(self):
-    #    return self.__type_def
-        
-    #@property
-    #def super(self):
-    #    return self.__superclass
-    
-    #def __str__(self):
-    #    return self.to_string()
-    
-class TypeDefinition(ObjectDefinition):
-    def __init__(self, type_def, superclass, type_name):
-        super().__init__(type_def, superclass)
-        self.__type_name = type_name
-        
-    @property
-    def name(self):
-        return self.__type_name
-    
-#OBJECT = ObjectDefinition.__new__(ObjectDefinition)
-#OBJECT_TYPEDEF = TypeDefinition.__new__(TypeDefinition)
-
-#OBJECT.__init__(OBJECT_TYPEDEF, None)
-#OBJECT_TYPEDEF.__init__(OBJECT_TYPEDEF, OBJECT, 'TypeDefinition')
-
-#METHOD_TYPEDEF = TypeDefinition(OBJECT_TYPEDEF, OBJECT, 'Method')
-
-#def make_method(method_bound_callable):
-#    method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
-#    method.add_hook('()', method_bound_callable)
-#    return method
-
-        
-    
 # class TypeDefinition(ObjectDefinition):
-#     def __init__(self, type_name):
-#         # If type_name is TypeDefinition
-#         # then type property will be a
-#         # circular reference
-#         class_name = self.__class__.__name__
-#         if type_name == class_name:
-#             type_def = self
-#         else:
-#             type_def = get_type_definition(class_name)
-#         
-#         super().__init__(type_def, get_object())
-#         self.__methods = defaultdict(lambda: None)
+#     def __init__(self, superclass, type_name, type_def=None):
+#         super().__init__(superclass, type_def)
 #         self.__type_name = type_name
-#         self.__final = False
-#         self.__property_table = SymbolTable()
-#         
-#     def add_property(self, property_name, property_value, constant=False):
-#         if constant:
-#             self.__property_table[property_name] = ConstantValueHolder(property_value)
-#         else:
-#             self.__property_table[property_name] = ValueHolder(property_value)
-#         
-#     @property
-#     def final(self):
-#         return self.__final
-#     
-#     @final.setter
-#     def final(self, value):
-#         self.__final = value
-#     
+        
 #     @property
 #     def name(self):
 #         return self.__type_name
-#         
-#     def add_method(self, method):
-#         self.__methods[method.name] = method
-#         
-#     def has_method(self, method_name):
-#         return (method_name in self.__methods.keys())
-#     
-#     def get_method(self, name):
-#         return self.__methods[name]
-#     
-#     def to_string(self):
-#         return "<{} '{}'>".format(self.__class__.__name__, self.name)
-    
-    
-# class InheritingTypeDefintition(TypeDefinition):
-#     def __init__(self, type_name, parent_type_def):
-#         super().__init__(type_name)
-#         self.__parent_type_def = parent_type_def
-#         
-# class Trait(TypeDefinition):
-#     def __init__(self, trait_name, *traits):
-#         super().__init__(trait_name)
-#         self.__traits = traits        
-#     
-# class Class(TypeDefinition):
-#     def __init__(self, class_name, base_class, *traits):
-#         super().__init__(class_name)
-#         self.__traits = traits
-#         self.__base_class = base_class
-#         
-#     def new(self):
-#         parent_instance = None
-#         if self.__base_class:
-#             parent_instance = self.__base_class.new()
-#         return ObjectDefinition(self, parent_instance)
 
+class MethodDefinition:
+    def __init__(self, method_name, method_callable):
+        self.__method_name = method_name
+        self.__method_callable = method_callable
+        
+    @property
+    def name(self):
+        return self.__method_name
+        
+    @property
+    def callable(self):
+        return self.__method_callable
+        
+class PropertyDefinition:
+    def __init__(self, property_name, getter_callable, setter_callable):
+        self.__property_name = property_name
+        self.__getter_callable = getter_callable
+        self.__setter_callable = setter_callable
+        
+    @property
+    def name(self):
+        return self.__property_name
+        
+    @property
+    def getter_callable(self):
+        return self.__getter_callable
+        
+    @property
+    def setter_callable(self):
+        return self.__setter_callable
+        
+class ValDefinition:
+    def __init__(self, val_name, val_init_expr):
+        self.__val_name = val_name
+        self.__val_init_expr = val_init_expr
+        
+    @property
+    def name(self):
+        return self.__val_name
+        
+    @property
+    def init_expr(self):
+        return self.__val_init_expr
     
 class Callable:
     def __init__(self, content, *params):
         self.__params = params
         self.__content = content
-#         
-#     def add_param(self, param_name):
-#         self.__params += [param_name]
         
     def __check_arity(self, *param_values):
         if len(self.__params) != len(param_values):
@@ -288,15 +232,6 @@ class BoundCallable(ObjectDefinition):
     def call(self, *params):
         return self.__callable.call(self.__context, *params)
 
-# class MethodBinding(Callable):
-#     def __init__(self, symbol_context, method):
-#         self.__symbol_context = symbol_context
-#         self.__method = method
-         
-#     def __getattr__(self, name):
-#         return self.__method.__getattr__(self.__method, name)
-
-    
 # class Callable(ObjectDefinition):
 #     def __init__(self, type_def, name, *param_names):
 #         super().__init__(type_def, get_object())
@@ -311,24 +246,6 @@ class BoundCallable(ObjectDefinition):
 #             kwargs = {'caller': caller.type.name, 'method_name': self.__name, 'exp': self.arity, 'got': len(called_params)}
 #             raise SyntaxError("{caller}.{method_name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
 #     
-#     @property
-#     def param_names(self):
-#         return self.__param_names
-#     
-#     @property
-#     def arity(self):
-#         return len(self.__param_names)
-#         
-#     @property
-#     def name(self):
-#         return self.__name
-#     
-#     def to_string(self):
-#         return "<{} '{}'>".format(self.type.name, self.name)
-    
-# class Method(Callable): pass
-
-# class Function(Callable): pass
     
 # class PyMethod(Method):
 #     def __init__(self, method_name, function, *param_names):
@@ -391,86 +308,3 @@ class BoundCallable(ObjectDefinition):
 #         if self.__function:
 #             return self.__function(*params)
 #         
-# class SumFunction(PyFunction):
-#     def __init__(self):
-#         super().__init__('sum', lambda a, b, c: a + b + c, 'a', 'b', 'c')
-# 
-# 
-# object_type = TypeDefinition.__new__(TypeDefinition)
-# register_type_definition(object_type, 'ObjectDefinition')
-# 
-# type_definition = TypeDefinition.__new__(TypeDefinition)
-# register_type_definition(type_definition, 'TypeDefinition')
-# 
-# object_type.__init__('ObjectDefinition')
-# type_definition.__init__('TypeDefinition')
-# 
-# method = TypeDefinition('Method')
-# register_type_definition(method, method.name)
-# 
-# object_type.add_method(TypeMethod())
-# object_type.add_method(IdMethod())
-# object_type.add_method(ToStringMethod())
-# object_type.add_method(SuperMethod())
-# 
-# type_definition.add_method(TypeMethod())
-# type_definition.add_method(IdMethod())
-# type_definition.add_method(ToStringMethod())
-# 
-# method.add_method(NameMethod())
-# 
-# # FUNCTION
-# 
-# function = TypeDefinition('Function')
-# register_type_definition(function, function.name)
-# 
-# function.add_method(NameMethod())
-# 
-# # TRAIT
-# 
-# trait = TypeDefinition('Trait')
-# register_type_definition(trait, 'Trait')
-# 
-# trait.add_method(TypeMethod())
-# trait.add_method(IdMethod())
-# trait.add_method(ToStringMethod())
-# 
-# message_method = PyMethod('message', lambda target: 'The message is: ' + target.type.name)
-# 
-# foo_class = Class('Foo', None)
-# foo_class.add_method(message_method)
-# foo_inst = foo_class.new()
-# 
-# print(foo_class.to_string())
-# print(foo_inst.to_string())
-# 
-# some_class = Class('Some', foo_class)
-# some_inst = some_class.new()
-# 
-# print(some_class.to_string())
-# print(some_inst.to_string())
-# print(some_inst.call_method('message'))
-# print(some_inst.super.to_string())
-
-# number = TypeDefinition('Number')
-# register_type_definition(number)
-# 
-# number.add_method(PyBinaryOpMethod('+'))
-# number.add_method(PyBinaryOpMethod('-'))
-# number.add_method(PyBinaryOpMethod('*'))
-# number.add_method(PyBinaryOpMethod('/'))
-# 
-# sum_instance = SumFunction()
-
-#print(object_type.super.type.type.type.to_string())
-#print(BUILTIN_SYMBOLS)
-#print(number.to_string())
-#print(sum_instance.type.to_string())
-#print(IdMethod().type.to_string())
-#print(sum_instance.super.to_string())
-#print(sum_instance.call(1,2,3))
-#print(sum_instance.call_method('id'))
-#print(sum_instance.super.type.to_string())
-#print(number.to_string())
-#print(method.type.type)
-#print(method.type.name)
