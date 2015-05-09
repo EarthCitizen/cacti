@@ -114,6 +114,26 @@ class ObjectDefinition:
 #     def name(self):
 #         return self.__type_name
 
+class ClassDefinition(ObjectDefinition):
+    def __init__(self, superclass, *, type_def=None, name=''):
+        super().__init__(superclass, type_def=type_def, name=name)
+        self.__val_defs = []
+        self.__var_defs = []
+        self.__method_defs = []
+        self.__property_defs = []
+        
+    def add_val_definition(self, val_def):
+        self.__val_defs += val_def
+        
+    def add_var_definition(self, var_def):
+        self.__var_def += var_def
+        
+    def add_method_definition(self, method_def):
+        self.__method_defs += method_def
+        
+    def add_property_definition(self, prop_def):
+        self.__property_defs = []
+
 class MethodDefinition:
     def __init__(self, method_name, method_callable):
         self.__method_name = method_name
