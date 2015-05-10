@@ -3,7 +3,7 @@ __all__ = [
            'isvalidhook', 'isvalidsymbol', 'peek_call_env', 'pop_call_env', 'push_call_env',
            
            # Exceptions
-           'ConstantValueError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
+           'ConstantValueError', 'OperationNotSupportedError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
            
            # Classes
            'CallEnv', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder'
@@ -96,7 +96,9 @@ class PropertyGetValueHolder(ConstantValueHolder):
     
     value = property(get_value,ConstantValueHolder.set_value)
     
-
+class OperationNotSupportedError(Exception):
+    def __init__(self, operation):
+        super().__init__("Operation '{}' not supported".format(operation))
 
 class SymbolError(Exception): pass
 

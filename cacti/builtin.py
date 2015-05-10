@@ -1,5 +1,6 @@
 from cacti.runtime import *
 from cacti.lang import *
+from cacti.builtin_init_data import *
 
 BUILTIN_SYMBOLS = SymbolTable()
 
@@ -18,8 +19,12 @@ def add_builtin(symbol_name, object_instance):
 # __method_typedef = TypeDefinition(__object_typedef, __object, 'Method')
 
 
+def init_object_class_def(class_def):
+    object_dict = BUILTIN_INIT_DATA['Object']
+    
+
 __object = ObjectDefinition(None)
-__object_typedef = ObjectDefinition(__object, name='Object')
+__object_classdef = ClassDefinition(__object, name='Object')
 __typedef_typedef = ObjectDefinition(__object, name='TypeDefinition')
 
 __object.set_type_def(__object_typedef)
@@ -40,4 +45,8 @@ print(__object.type_def.name)
 print(__object.type_def.type_def.name)
 
 # object.type.name => Object
-# object.type.type.name => TypeDefinition
+# object.type.to_string => Class<Object>
+# object.type.type.name => Class
+# object.type.type.to_string => Type<Class>
+# object.type.type.type.name => Type
+# object.type.type.type.to_string => Type<Type>

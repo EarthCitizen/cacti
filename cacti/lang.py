@@ -2,7 +2,9 @@ from cacti.runtime import *
 
 __all__ = [
            # Classes
-           'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding', 'ObjectDefinition'
+           'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding',
+           
+           'ClassDefinition', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition'
            ]
            
 
@@ -45,6 +47,15 @@ class ObjectDefinition:
         
     def set_type_def(self, type_def):
         self.__type_def = type_def
+        
+    
+    @property
+    def public_table(self):
+        return self.__public_table
+        
+    @property
+    def private_table(self):
+        return self.__private_table
         
     @property
     def hook_table(self):
@@ -117,10 +128,14 @@ class ObjectDefinition:
 class ClassDefinition(ObjectDefinition):
     def __init__(self, superclass, *, type_def=None, name=''):
         super().__init__(superclass, type_def=type_def, name=name)
+        self.__hook_defs = []
         self.__val_defs = []
         self.__var_defs = []
         self.__method_defs = []
         self.__property_defs = []
+        
+    def add_hook_definition(self, hook_def):
+        self.__hook_defs += hook_def
         
     def add_val_definition(self, val_def):
         self.__val_defs += val_def
@@ -148,7 +163,7 @@ class MethodDefinition:
         return self.__method_callable
         
 class PropertyDefinition:
-    def __init__(self, property_name, getter_callable, setter_callable):
+    def __init__(self, property_name, *, getter_callable=None, setter_callable=None):
         self.__property_name = property_name
         self.__getter_callable = getter_callable
         self.__setter_callable = setter_callable
