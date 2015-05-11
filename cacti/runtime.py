@@ -109,7 +109,14 @@ class SymbolUnknownError(SymbolError):
         super().__init__("Unknown symbol '{}'".format(symbol_name))
 
 __VALID_SYMBOL_PATTERN__ = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
-__VALID_HOOK_PATTERN__ =  re.compile(r'^\(\)|\.|\+$')
+
+__HOOKS__ = [
+        r'\(\)', r'\[\]', r'\.',
+        r'\*', r'\/', r'\+', r'\-',
+        r'\*\=', r'\/\=', r'\+\=', r'\-\=',
+    ]
+
+__VALID_HOOK_PATTERN__ =  re.compile(r'^' + r'|'.join(__HOOKS__) + r'$')
 
 def isvalidsymbol(symbol):
     return True if isinstance(symbol, str) and __VALID_SYMBOL_PATTERN__.match(symbol) else False

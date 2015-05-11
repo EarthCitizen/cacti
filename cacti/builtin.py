@@ -7,42 +7,39 @@ BUILTIN_SYMBOLS = SymbolTable()
 def add_builtin(symbol_name, object_instance):
     BUILTIN_SYMBOLS.add_symbol(symbol_name, ConstantValueHolder(object_instance))
 
-#__object = ObjectDefinition.__new__(ObjectDefinition)
-#__object_typedef = TypeDefinition.__new__(TypeDefinition)
-#__typedef_typedef = TypeDefinition.__new__(TypeDefinition)
-
-# __object.__init__(__object_typedef, None)
-# __typedef_typedef.__init__(__typedef_typedef, __object, 'TypeDefinition')
-# __object_typedef.__init__(__typedef_typedef, __object, 'Object')
-
-# __function_typedef = TypeDefinition(__object_typedef, __object, 'Function')
-# __method_typedef = TypeDefinition(__object_typedef, __object, 'Method')
-
-
-def init_object_class_def(class_def):
-    object_dict = BUILTIN_INIT_DATA['Object']
-    
-
 __object = ObjectDefinition(None)
-__object_classdef = ClassDefinition(__object, name='Object')
+__object_classdef = ClassDefinition(__object, 'Object')
+init_class_def_from_data(__object_classdef)
+init_object_def_from_class_def(__object, __object_classdef)
+
+__classdef_typedef_superobj =  __object_classdef.hook_table['()'].call()
+
 __typedef_typedef = ObjectDefinition(__object, name='TypeDefinition')
 
-__object.set_type_def(__object_typedef)
-__object_typedef.set_type_def(__typedef_typedef)
+__object.set_type_def(__object_classdef)
+__object_classdef.set_type_def(__typedef_typedef)
 __typedef_typedef.set_type_def(__typedef_typedef)
 
-__function_typedef = ObjectDefinition(__object, name='Function', type_def=__object_typedef)
-__method_typedef = ObjectDefinition(__object, name='Method', type_def=__object_typedef)
+#__function_typedef = ObjectDefinition(__object, name='Function', type_def=__object_typedef)
+#__method_typedef = ObjectDefinition(__object, name='Method', type_def=__object_typedef)
 
-add_builtin(__object_typedef.name, __object_typedef)
+add_builtin(__object_classdef.name, __object_classdef)
 add_builtin(__typedef_typedef.name, __typedef_typedef)
-add_builtin(__object_typedef.name, __object_typedef)
-add_builtin(__method_typedef.name, __method_typedef)
+#add_builtin(__object_typedef.name, __object_typedef)
+#add_builtin(__method_typedef.name, __method_typedef)
+
+print(__classdef_typedef_superobj.type_def)
 
 print(__object)
-print(__object.type_def)
-print(__object.type_def.name)
-print(__object.type_def.type_def.name)
+print(__object_classdef)
+print(__object_classdef.hook_table['()'].call().type_def.name)
+#print(__object.property_table['string'].call())
+#print(__object.property_table['type'])
+#print(__object.property_table['string'])
+#print(__object.property_table['name'])
+#print(__object.type_def)
+#print(__object.type_def.name)
+#print(__object.type_def.type_def.name)
 
 # object.type.name => Object
 # object.type.to_string => Class<Object>

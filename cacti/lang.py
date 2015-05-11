@@ -30,16 +30,16 @@ def get_object():
 
 # All ObjectDefinition Instances Have This
 class ObjectDefinition:
-    def __init__(self, superclass, *, type_def=None, name=''):
+    def __init__(self, superobj, *, type_def=None, name=''):
         self.__type_def = type_def
         self.__name = name
-        self.__superclass = superclass
+        self.__superobj = superobj
         self.__field_table = SymbolTable()
         
-        parent_hook_table = superclass.hook_table if superclass else None
+        parent_hook_table = superobj.hook_table if superobj else None
         self.__hook_table = SymbolTable(parent_table=parent_hook_table, symbol_validator=isvalidhook)
         
-        parent_property_table = superclass.property_table if superclass else None
+        parent_property_table = superobj.property_table if superobj else None
         self.__property_table = SymbolTable(parent_table=parent_property_table)
         
         self.__public_table = self.__property_table
@@ -66,8 +66,8 @@ class ObjectDefinition:
         return self.__property_table
     
     @property
-    def superclass(self):
-        return self.__superclass
+    def superobj(self):
+        return self.__superobj
         
     @property
     def type_def(self):
@@ -88,7 +88,8 @@ class ObjectDefinition:
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
     def add_method(self, method_name, method_callable):
-        bound_callable = BoundCallable(method_callable, self.__private_context)
+        MethodBinding(self, method_name, method_callable)
+        bound_callable = MethodBinding(self, method_name, method_callable)
         method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
         method.add_hook('()', bound_callable)
         const_value = ConstantValueHolder(method)
@@ -96,14 +97,17 @@ class ObjectDefinition:
         
     def add_property(self, property_name, get_callable, set_callable):
         value_holder = None
-        private_context = self.__private_context
+        private_table = self.__private_table
         
         if get_callable is None and set_callable is None:
             value_holder = ValueHolder()
         elif get_callable is not None and set_callable is not None:
-            value_holder = PropertyGetValueHolder(BoundCallable(get_callable, private_context))
+            value_holder = PropertyGetValueHolder(
+                MethodBinding(self, property_name, get_callable))
         elif get_callable is not None and set_callable is None:
-            value_holder = PropertyGetValueHolder(BoundCallable(get_callable, private_context), BoundCallable(set_callable, private_context))
+            value_holder = PropertyGetSetValueHolder(
+                MethodBinding(self, property_name, get_callable),
+                MethodBinding(self, property_name, set_callable))
         else:
             raise Exception('TBD')
         
@@ -114,40 +118,68 @@ class ObjectDefinition:
         
     def set_property(self, property_name, property_value):
         self.__property_table[property_name] = property_value
-    
         
-# class TypeDefinition(ObjectDefinition):
-#     def __init__(self, superclass, type_name, type_def=None):
-#         super().__init__(superclass, type_def)
-#         self.__type_name = type_name
-        
-#     @property
-#     def name(self):
-#         return self.__type_name
+    def __str__(self):
+        return '{}<{}>'.format(self.type_def.name, id(self))
 
+class TypeDefinition:
+    def __str__(self):
+        return '{}<{}>'.format('Type', self.name)
+        
 class ClassDefinition(ObjectDefinition):
-    def __init__(self, superclass, *, type_def=None, name=''):
-        super().__init__(superclass, type_def=type_def, name=name)
+    def __init__(self, superobj, name, *, type_def=None, superclass=None):
+        super().__init__(superobj, type_def=type_def, name=name)
+        self.__superclass = superclass
         self.__hook_defs = []
         self.__val_defs = []
         self.__var_defs = []
         self.__method_defs = []
         self.__property_defs = []
         
+    def set_superclass(superclass):
+        self.__superclass = superclass
+        
+    @property
+    def superclass(self):
+        return self.__superclass
+        
+    @property
+    def hook_definitions(self):
+        return self.__hook_defs
+        
+    @property
+    def val_definitions(self):
+        return self.__val_defs
+        
+    @property
+    def var_definitions(self):
+        return self.__var_defs
+        
+    @property
+    def method_definitions(self):
+        return self.__method_defs
+        
+    @property
+    def property_definitions(self):
+        return self.__property_defs
+        
     def add_hook_definition(self, hook_def):
-        self.__hook_defs += hook_def
+        self.__hook_defs += [hook_def]
         
     def add_val_definition(self, val_def):
-        self.__val_defs += val_def
+        self.__val_defs += [val_def]
         
     def add_var_definition(self, var_def):
-        self.__var_def += var_def
+        self.__var_def += [var_def]
         
     def add_method_definition(self, method_def):
-        self.__method_defs += method_def
+        self.__method_defs += [method_def]
         
     def add_property_definition(self, prop_def):
-        self.__property_defs = []
+        self.__property_defs += [prop_def]
+        
+    def __str__(self):
+        return '{}<{}>'.format('Class', self.name)
 
 class MethodDefinition:
     def __init__(self, method_name, method_callable):
@@ -252,7 +284,7 @@ class MethodBinding:
         push_call_env(CallEnv(self.__owner, self.__name))
         super_self = SymbolTable()
         super_self.add_symbol('self', ConstantValueHolder(self.__owner))
-        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superclass))
+        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
         peek_call_env().symbol_stack.push(super_self)
         return_value = self.__callable.call(*params)
         pop_call_env()
