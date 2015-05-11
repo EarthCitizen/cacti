@@ -7,43 +7,31 @@ BUILTIN_SYMBOLS = SymbolTable()
 def add_builtin(symbol_name, object_instance):
     BUILTIN_SYMBOLS.add_symbol(symbol_name, ConstantValueHolder(object_instance))
 
-__object = ObjectDefinition(None)
-__object_classdef = ClassDefinition(__object, 'Object')
+__object_classdef_superobj = ObjectDefinition(None)
+__object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
+__object_classdef_superobj.set_selfobj(__object_classdef)
 init_class_def_from_data(__object_classdef)
-init_object_def_from_class_def(__object, __object_classdef)
+init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
 
-__classdef_typedef_superobj =  __object_classdef.hook_table['()'].call()
+__typedef_typedef_superobj = __object_classdef.hook_table['()'].call()
+__typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
+__typedef_typedef_superobj.set_selfobj(__typedef_typedef)
+__typedef_typedef.set_typeobj(__typedef_typedef)
 
-__typedef_typedef = ObjectDefinition(__object, name='TypeDefinition')
+__classdef_typedef_superobj = __object_classdef.hook_table['()'].call()
+__classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
+__classdef_typedef_superobj.set_selfobj(__classdef_typedef)
+__classdef_typedef.set_typeobj(__typedef_typedef)
 
-__object.set_type_def(__object_classdef)
-__object_classdef.set_type_def(__typedef_typedef)
-__typedef_typedef.set_type_def(__typedef_typedef)
+__object_classdef.set_typeobj(__classdef_typedef)
 
-#__function_typedef = ObjectDefinition(__object, name='Function', type_def=__object_typedef)
-#__method_typedef = ObjectDefinition(__object, name='Method', type_def=__object_typedef)
+__user_object = __object_classdef.hook_table['()'].call()
 
-add_builtin(__object_classdef.name, __object_classdef)
-add_builtin(__typedef_typedef.name, __typedef_typedef)
-#add_builtin(__object_typedef.name, __object_typedef)
-#add_builtin(__method_typedef.name, __method_typedef)
+#### WHERE TO LOAD IN NAME PROPERTY???
 
-print(__classdef_typedef_superobj.type_def)
-
-print(__object)
-print(__object_classdef)
-print(__object_classdef.hook_table['()'].call().type_def.name)
-#print(__object.property_table['string'].call())
-#print(__object.property_table['type'])
-#print(__object.property_table['string'])
-#print(__object.property_table['name'])
-#print(__object.type_def)
-#print(__object.type_def.name)
-#print(__object.type_def.type_def.name)
-
-# object.type.name => Object
-# object.type.to_string => Class<Object>
-# object.type.type.name => Class
-# object.type.type.to_string => Type<Class>
-# object.type.type.type.name => Type
-# object.type.type.type.to_string => Type<Type>
+print(__user_object.property_table['type'])
+print(__user_object.property_table['type'].property_table['type'])
+print(__user_object.property_table['type'].property_table['type'].property_table['type'])
+# SUPER.SUPER is broken, it keeps returning the same objet, instead of going up
+print(__user_object.property_table['type'].property_table['super'])
+print(__user_object.property_table['type'].property_table['super'].property_table['super'])

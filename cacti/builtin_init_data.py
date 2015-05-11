@@ -16,8 +16,12 @@ def hook_new_body():
     class_def = peek_call_env().owner
     superclass_def = class_def.superclass
     superobj = superclass_def.hook_table['()'] if superclass_def else None
-    obj = ObjectDefinition(superobj, type_def=class_def)
+    obj = ObjectDefinition(superobj, typeobj=class_def)
     init_object_def_from_class_def(obj, class_def)
+    
+    if superobj:
+        superobj.set_selfobj(obj)
+    
     return obj
     
 hook_new_callable = Callable(hook_new_body)
@@ -46,6 +50,9 @@ def make_method_def_op_not_supported(operation, *param_names):
         raise OperationNotSupportedError(operation)
     method_callable = StubCallable(do_raise)
     return MethodDefinition(operation, method_callable)
+    
+def debug_type():
+     return peek_call_env().symbol_stack['self'].typeobj
 
 BUILTIN_INIT_DATA = {
         'Object': {
@@ -75,11 +82,10 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_callable=Callable(lambda: str(peek_call_env().owner))),
-                        PropertyDefinition('type',   getter_callable=Callable(lambda: peek_call_env().owner.type_def)),
-                        PropertyDefinition('super',  getter_callable=Callable(lambda: peek_call_env().owner.superobj)),
-                        #PropertyDefinition('name',   getter_callable=Callable(lambda: peek_call_env().owner.name)),
-                        PropertyDefinition('id',     getter_callable=Callable(lambda: id(peek_call_env().owner)))
+                        PropertyDefinition('string', getter_callable=Callable(lambda: str(peek_call_env().symbol_stack['self']))),
+                        PropertyDefinition('type',   getter_callable=Callable(lambda: peek_call_env().symbol_stack['self'].typeobj)),
+                        PropertyDefinition('super',  getter_callable=Callable(lambda: peek_call_env().symbol_stack['super'])),
+                        PropertyDefinition('id',     getter_callable=Callable(lambda: id(peek_call_env().symbol_stack['self'])))
                     }
             }
     }
@@ -120,3 +126,5 @@ def init_object_def_from_class_def(object_def, class_def):
         
     for var_def in class_def.var_definitions:
         object_def.add_var(var_def.name, var_def.init_expr)
+        
+    object_def.set_typeobj(class_def)

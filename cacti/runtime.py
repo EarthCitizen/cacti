@@ -15,13 +15,16 @@ import collections
 CALL_ENV_STACK = collections.deque()
 
 def push_call_env(call_env):
+    #print('Pushing: ' + str(call_env))
     CALL_ENV_STACK.appendleft(call_env)
     
 def peek_call_env(pos=0):
     return CALL_ENV_STACK[pos]
     
 def pop_call_env():
-    return CALL_ENV_STACK.popleft();
+    popped = CALL_ENV_STACK.popleft()
+    #print('Popped: ' + str(popped))
+    return popped
 
 class CallEnv:
     def __init__(self, owner, name):
@@ -45,7 +48,13 @@ class CallEnv:
         return str(self)
         
     def __str__(self):
-        return self.__class__.__name__ + "<" + self.__name + ">" + "(" + str(self.__symbol_stack) + ")"
+        #return self.__class__.__name__ + "<" + self.__name + ">" + "(" + str(self.__symbol_stack) + ")"
+        return "{} {}({})<{}>({})".format(
+            self.__class__.__name__,
+            self.__owner.__class__.__name__,
+            id(self.__owner),
+            self.__name,
+            str(self.__symbol_stack))
 
 class ConstantValueError(Exception): pass
 

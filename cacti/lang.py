@@ -4,7 +4,7 @@ __all__ = [
            # Classes
            'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding',
            
-           'ClassDefinition', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition'
+           'ClassDefinition', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition'
            ]
            
 
@@ -30,9 +30,10 @@ def get_object():
 
 # All ObjectDefinition Instances Have This
 class ObjectDefinition:
-    def __init__(self, superobj, *, type_def=None, name=''):
-        self.__type_def = type_def
+    def __init__(self, superobj, *, typeobj=None, name=''):
+        self.__typeobj = typeobj
         self.__name = name
+        self.__selfobj = self
         self.__superobj = superobj
         self.__field_table = SymbolTable()
         
@@ -45,9 +46,11 @@ class ObjectDefinition:
         self.__public_table = self.__property_table
         self.__private_table = SymbolTableChain(self.__property_table, self.__field_table)
         
-    def set_type_def(self, type_def):
-        self.__type_def = type_def
+    def set_typeobj(self, typeobj):
+        self.__typeobj = typeobj
         
+    def set_selfobj(self, selfobj):
+        self.__selfobj = selfobj
     
     @property
     def public_table(self):
@@ -64,14 +67,18 @@ class ObjectDefinition:
     @property
     def property_table(self):
         return self.__property_table
+        
+    @property
+    def selfobj(self):
+        return self.__selfobj
     
     @property
     def superobj(self):
         return self.__superobj
         
     @property
-    def type_def(self):
-        return self.__type_def
+    def typeobj(self):
+        return self.__typeobj
         
     @property
     def name(self):
@@ -88,7 +95,6 @@ class ObjectDefinition:
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
     def add_method(self, method_name, method_callable):
-        MethodBinding(self, method_name, method_callable)
         bound_callable = MethodBinding(self, method_name, method_callable)
         method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
         method.add_hook('()', bound_callable)
@@ -113,22 +119,19 @@ class ObjectDefinition:
         
         self.__property_table.add_symbol(property_name, value_holder)
     
-    def get_property(self, property_name):
-        self.__property_table[property_name]
-        
-    def set_property(self, property_name, property_value):
-        self.__property_table[property_name] = property_value
-        
     def __str__(self):
-        return '{}<{}>'.format(self.type_def.name, id(self))
+        return '{}<{}>'.format(self.typeobj.name, id(self))
 
-class TypeDefinition:
+class TypeDefinition(ObjectDefinition):
+    def __init__(self, superobj, name, *, typeobj=None):
+        super().__init__(superobj, typeobj=typeobj, name=name)
+    
     def __str__(self):
         return '{}<{}>'.format('Type', self.name)
         
 class ClassDefinition(ObjectDefinition):
-    def __init__(self, superobj, name, *, type_def=None, superclass=None):
-        super().__init__(superobj, type_def=type_def, name=name)
+    def __init__(self, superobj, name, *, typeobj=None, superclass=None):
+        super().__init__(superobj, typeobj=typeobj, name=name)
         self.__superclass = superclass
         self.__hook_defs = []
         self.__val_defs = []
@@ -136,7 +139,7 @@ class ClassDefinition(ObjectDefinition):
         self.__method_defs = []
         self.__property_defs = []
         
-    def set_superclass(superclass):
+    def set_superclass(self, superclass):
         self.__superclass = superclass
         
     @property
@@ -283,21 +286,12 @@ class MethodBinding:
     def call(self, *params):
         push_call_env(CallEnv(self.__owner, self.__name))
         super_self = SymbolTable()
-        super_self.add_symbol('self', ConstantValueHolder(self.__owner))
-        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
+        super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
+        super_self.add_symbol('super', ConstantValueHolder(self.__owner.selfobj.superobj))
         peek_call_env().symbol_stack.push(super_self)
         return_value = self.__callable.call(*params)
         pop_call_env()
         return return_value
-
-class BoundCallable(ObjectDefinition):
-    def __init__(self, __callable, context):
-        self.__callable = __callable
-        self.__context = context
-        #self.__call_info = CallInfo(
-        
-    def call(self, *params):
-        return self.__callable.call(self.__context, *params)
 
 # class Callable(ObjectDefinition):
 #     def __init__(self, type_def, name, *param_names):
