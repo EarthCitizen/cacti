@@ -27,11 +27,6 @@ __object_classdef.set_typeobj(__classdef_typedef)
 
 __user_object = __object_classdef.hook_table['()'].call()
 
-#### WHERE TO LOAD IN NAME PROPERTY???
-
 print(__user_object.property_table['type'])
 print(__user_object.property_table['type'].property_table['type'])
-print(__user_object.property_table['type'].property_table['type'].property_table['type'])
-# SUPER.SUPER is broken, it keeps returning the same objet, instead of going up
-print(__user_object.property_table['type'].property_table['super'])
-print(__user_object.property_table['type'].property_table['super'].property_table['super'])
+print(__user_object.property_table['type'].property_table['name'])

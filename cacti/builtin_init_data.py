@@ -84,7 +84,6 @@ BUILTIN_INIT_DATA = {
                 'property_defs': {
                         PropertyDefinition('string', getter_callable=Callable(lambda: str(peek_call_env().symbol_stack['self']))),
                         PropertyDefinition('type',   getter_callable=Callable(lambda: peek_call_env().symbol_stack['self'].typeobj)),
-                        PropertyDefinition('super',  getter_callable=Callable(lambda: peek_call_env().symbol_stack['super'])),
                         PropertyDefinition('id',     getter_callable=Callable(lambda: id(peek_call_env().symbol_stack['self'])))
                     }
             }

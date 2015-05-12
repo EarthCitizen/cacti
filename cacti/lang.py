@@ -35,6 +35,10 @@ class ObjectDefinition:
         self.__name = name
         self.__selfobj = self
         self.__superobj = superobj
+        
+        if self.__superobj:
+            self.__superobj.set_selfobj(self)
+        
         self.__field_table = SymbolTable()
         
         parent_hook_table = superobj.hook_table if superobj else None
@@ -125,11 +129,15 @@ class ObjectDefinition:
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
         super().__init__(superobj, typeobj=typeobj, name=name)
+        self.add_property(
+            'name',
+            Callable(lambda: peek_call_env().symbol_stack['self'].name),
+            None)
     
     def __str__(self):
         return '{}<{}>'.format('Type', self.name)
         
-class ClassDefinition(ObjectDefinition):
+class ClassDefinition(TypeDefinition):
     def __init__(self, superobj, name, *, typeobj=None, superclass=None):
         super().__init__(superobj, typeobj=typeobj, name=name)
         self.__superclass = superclass
@@ -368,4 +376,4 @@ class MethodBinding:
 #         super().call(self, *params)
 #         if self.__function:
 #             return self.__function(*params)
-#         
+#
