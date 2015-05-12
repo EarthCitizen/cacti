@@ -7,22 +7,27 @@ BUILTIN_SYMBOLS = SymbolTable()
 def add_builtin(symbol_name, object_instance):
     BUILTIN_SYMBOLS.add_symbol(symbol_name, ConstantValueHolder(object_instance))
 
-__object_classdef_superobj = ObjectDefinition(None)
-__object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
-init_class_def_from_data(__object_classdef)
-init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
+def bootstrap_object_class_definition():
+    __object_classdef_superobj = ObjectDefinition(None)
+    __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
+    init_class_def_from_data(__object_classdef)
+    init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
+    
+    __typedef_typedef_superobj = __object_classdef.hook_table['()'].call()
+    __typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
+    __typedef_typedef.set_typeobj(__typedef_typedef)
+    
+    __classdef_typedef_superobj = __object_classdef.hook_table['()'].call()
+    __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
+    __classdef_typedef.set_typeobj(__typedef_typedef)
+    
+    __object_classdef.set_typeobj(__classdef_typedef)
+    
+    add_builtin(__object_classdef.name, __object_classdef)
 
-__typedef_typedef_superobj = __object_classdef.hook_table['()'].call()
-__typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
-__typedef_typedef.set_typeobj(__typedef_typedef)
+bootstrap_object_class_definition()
 
-__classdef_typedef_superobj = __object_classdef.hook_table['()'].call()
-__classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
-__classdef_typedef.set_typeobj(__typedef_typedef)
-
-__object_classdef.set_typeobj(__classdef_typedef)
-
-__user_object = __object_classdef.hook_table['()'].call()
+__user_object = BUILTIN_SYMBOLS['Object'].hook_table['()'].call()
 
 #print(__user_object.property_table['type'])
 #print(__user_object.property_table['type'].property_table['type'])

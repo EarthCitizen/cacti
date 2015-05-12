@@ -15,12 +15,9 @@ class StubCallable:
 def hook_new_body():
     class_def = peek_call_env().owner
     superclass_def = class_def.superclass
-    superobj = superclass_def.hook_table['()'] if superclass_def else None
+    superobj = superclass_def.hook_table['()'].call() if superclass_def else None
     obj = ObjectDefinition(superobj, typeobj=class_def)
     init_object_def_from_class_def(obj, class_def)
-    
-    if superobj:
-        superobj.set_selfobj(obj)
     
     return obj
     
