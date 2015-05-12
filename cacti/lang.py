@@ -287,7 +287,7 @@ class MethodBinding:
         push_call_env(CallEnv(self.__owner, self.__name))
         super_self = SymbolTable()
         super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
-        super_self.add_symbol('super', ConstantValueHolder(self.__owner.selfobj.superobj))
+        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
         peek_call_env().symbol_stack.push(super_self)
         return_value = self.__callable.call(*params)
         pop_call_env()
