@@ -185,7 +185,6 @@ _make_type('Closure')
 _make_type('Method')
 
 def _make_string_class():
-    #def __init__(self, superobj, name, *, typeobj=None, superclass=None):
     superobj = get_builtin('Object').hook_table['()'].call()
     typeobj = get_type('Class')
     superclass = get_builtin('Object')
