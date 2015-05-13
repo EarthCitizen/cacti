@@ -139,7 +139,7 @@ def add_builtin(symbol_name, object_instance):
 def get_builtin(symbol_name):
     return _BUILTINS[symbol_name]
 
-def bootstrap_basic_types():
+def _bootstrap_basic_types():
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
     __object_classdef_superobj = ObjectDefinition(None)
     __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
@@ -160,6 +160,14 @@ def bootstrap_basic_types():
     
     add_type(__typedef_typedef.name, __typedef_typedef)
     add_type(__classdef_typedef.name, __classdef_typedef)
+    
+def _make_type(type_name):
+    superobj = get_builtin('Object').hook_table['()'].call()
+    typedef = TypeDefinition(superobj, type_name)
+    typedef.set_typeobj(get_type('Type'))
+    add_type(typedef.name, typedef)
 
-bootstrap_basic_types()
-
+_bootstrap_basic_types()
+_make_type('Function')
+_make_type('Closure')
+_make_type('Method')

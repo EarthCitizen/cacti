@@ -1,7 +1,7 @@
 from cacti.runtime import *
 from cacti.exceptions import *
 
-__all__ = ['ClassDefinition', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition']
+__all__ = ['ClassDefinition', 'Method', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition']
            
 
 # All ObjectDefinition Instances Have This
@@ -75,9 +75,8 @@ class ObjectDefinition:
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
     def add_method(self, method_name, method_callable):
-        bound_callable = MethodBinding(self, method_name, method_callable)
-        method = ObjectDefinition(METHOD_TYPEDEF, OBJECT)
-        method.add_hook('()', bound_callable)
+        method_binding = MethodBinding(self, method_name, method_callable)
+        method = Method(method_name, method_binding)
         const_value = ConstantValueHolder(method)
         self.__property_table.add_symbol(method_name, const_value)
         
@@ -101,7 +100,17 @@ class ObjectDefinition:
     
     def __str__(self):
         return '{}<{}>'.format(self.typeobj.name, id(self))
-
+        
+class Method(ObjectDefinition):
+    def __init__(self, name, binding):
+        from cacti.builtin import get_builtin, get_type
+        superobj = get_builtin('Object').hook_table['()'].call()
+        super().__init__(superobj, typeobj=get_type('Method'), name=name)
+        self.add_hook('()', binding)
+        
+    def __str__(self):
+        return 'Method<{}>'.format(self.name)
+        
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
         super().__init__(superobj, typeobj=typeobj, name=name)
