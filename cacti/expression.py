@@ -10,13 +10,16 @@ class Expression:
         pass
     
 class OperationExpression(Expression):
-    def __init__(self, operand_expr, operator, *operation_expr_params):
+    def __init__(self, operand_expr, operation, *operation_expr_params):
         self.__operand_expr = operand_expr
-        self.__operator = operator
+        self.__operation = operation
         self.__operation_expr_params = operation_expr_params
         
     def eval(self):
-        pass
+        target = self.__operand_expr()
+        params = list(map(lambda e: e(), self.__operation_expr_params))
+        return target.hook_table[self.__operation].call(*params)
+        
 
 class ReferenceExpression(Expression):
     def __init__(self, symbol):

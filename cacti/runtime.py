@@ -9,7 +9,7 @@ __all__ = [
            # Classes
            'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
            
-           'ClojureBinding', 'FunctionBinding', 'MethodBinding'
+           'ClosureBinding', 'FunctionBinding', 'MethodBinding'
            ]
 
 class Callable:
@@ -45,7 +45,7 @@ class Callable:
         symbol_stack.pop()
         return return_value
         
-class ClojureBinding:
+class ClosureBinding:
     def __init__(self, call_env, kallable):
         self.__call_env = call_env
         self.__callable = kallable

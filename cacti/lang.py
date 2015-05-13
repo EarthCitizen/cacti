@@ -1,7 +1,7 @@
 from cacti.runtime import *
 from cacti.exceptions import *
 
-__all__ = ['ClassDefinition', 'Method', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition']
+__all__ = ['ClassDefinition', 'Closure', 'Function', 'Method', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition']
            
 
 # All ObjectDefinition Instances Have This
@@ -75,8 +75,7 @@ class ObjectDefinition:
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
     def add_method(self, method_name, method_callable):
-        method_binding = MethodBinding(self, method_name, method_callable)
-        method = Method(method_name, method_binding)
+        method = Method(self, method_name, method_callable)
         const_value = ConstantValueHolder(method)
         self.__property_table.add_symbol(method_name, const_value)
         
@@ -100,16 +99,36 @@ class ObjectDefinition:
     
     def __str__(self):
         return '{}<{}>'.format(self.typeobj.name, id(self))
-        
-class Method(ObjectDefinition):
-    def __init__(self, name, binding):
+
+class Closure(ObjectDefinition):
+    def __init__(self, closure_call_env, closure_callable):
         from cacti.builtin import get_builtin, get_type
+        binding = ClosureBinding(closure_call_env, closure_callable)
         superobj = get_builtin('Object').hook_table['()'].call()
-        super().__init__(superobj, typeobj=get_type('Method'), name=name)
+        super().__init__(superobj, typeobj=get_type('Closure'))
+        self.add_hook('()', binding)
+        
+class Function(ObjectDefinition):
+    def __init__(self, function_name, function_callable):
+        from cacti.builtin import get_builtin, get_type
+        binding = FunctionBinding(self, function_name, function_callable)
+        superobj = get_builtin('Object').hook_table['()'].call()
+        super().__init__(superobj, typeobj=get_type('Function'), name=function_name)
         self.add_hook('()', binding)
         
     def __str__(self):
-        return 'Method<{}>'.format(self.name)
+        return "Function<'{}'>".format(self.name)
+        
+class Method(ObjectDefinition):
+    def __init__(self, method_owner, method_name, method_callable):
+        from cacti.builtin import get_builtin, get_type
+        binding = MethodBinding(method_owner, method_name, method_callable)
+        superobj = get_builtin('Object').hook_table['()'].call()
+        super().__init__(superobj, typeobj=get_type('Method'), name=method_name)
+        self.add_hook('()', binding)
+        
+    def __str__(self):
+        return "Method<'{}'>".format(self.name)
         
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
