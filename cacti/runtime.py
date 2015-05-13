@@ -1,21 +1,92 @@
+import re
+import collections
+from cacti.exceptions import *
+
 __all__ = [
            # Functions
            'isvalidhook', 'isvalidsymbol', 'peek_call_env', 'pop_call_env', 'push_call_env',
            
-           # Exceptions
-           'ConstantValueError', 'OperationNotSupportedError', 'SymbolContentError', 'SymbolError', 'SymbolUnknownError',
-           
            # Classes
-           'CallEnv', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder'
+           'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
+           
+           'ClojureBinding', 'FunctionBinding', 'MethodBinding'
            ]
 
-import re
-import collections
+class Callable:
+    def __init__(self, content, *params):
+        self.__params = params
+        self.__content = content
+        
+    def __check_arity(self, *param_values):
+        if len(self.__params) != len(param_values):
+            call_env = peek_call_env()
+            kwargs = {
+                'caller': str(call_env.owner),
+                'method_name': call_env.name,
+                'exp': len(self.__params),
+                'got': len(param_values)
+                }
+            raise ArityError("{caller}.{method_name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
+        
+    def __make_params_table(self, *param_values):
+        param_table = SymbolTable()
+        param_iter = iter(param_values)
+        for v in self.__params:
+            param_table.add_symbol(v, ConstantValueHolder(next(param_iter)))
+        return param_table
+    
+    def call(self, *param_values):
+        self.__check_arity(*param_values)
+        param_table = self.__make_params_table(*param_values)
+        call_env = peek_call_env()
+        symbol_stack = call_env.symbol_stack
+        symbol_stack.push(param_table)
+        return_value = self.__content()
+        symbol_stack.pop()
+        return return_value
+        
+class ClojureBinding:
+    def __init__(self, call_env, kallable):
+        self.__call_env = call_env
+        self.__callable = kallable
+        
+    def call(self, *params):
+        push_call_env(self.__call_env)
+        return_value = self.__callable.call(*params)
+        pop_call_env()
+        return return_value   
+
+class FunctionBinding:
+    def __init__(self, owner, name, kallable):
+        self.__owner = owner
+        self.__name = name
+        self.__callable = kallable
+        
+    def call(self, *params):
+        push_call_env(CallEnv(self.__owner, self.__name))
+        return_value = self.__callable.call(*params)
+        pop_call_env()
+        return return_value
+        
+class MethodBinding:
+    def __init__(self, owner, name, kallable):
+        self.__owner = owner
+        self.__name = name
+        self.__callable = kallable
+        
+    def call(self, *params):
+        push_call_env(CallEnv(self.__owner, self.__name))
+        super_self = SymbolTable()
+        super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
+        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
+        peek_call_env().symbol_stack.push(super_self)
+        return_value = self.__callable.call(*params)
+        pop_call_env()
+        return return_value
 
 CALL_ENV_STACK = collections.deque()
 
 def push_call_env(call_env):
-    #print('Pushing: ' + str(call_env))
     CALL_ENV_STACK.appendleft(call_env)
     
 def peek_call_env(pos=0):
@@ -23,7 +94,6 @@ def peek_call_env(pos=0):
     
 def pop_call_env():
     popped = CALL_ENV_STACK.popleft()
-    #print('Popped: ' + str(popped))
     return popped
 
 class CallEnv:
@@ -55,8 +125,6 @@ class CallEnv:
             id(self.__owner),
             self.__name,
             str(self.__symbol_stack))
-
-class ConstantValueError(Exception): pass
 
 class ValueHolder:
     def __init__(self, value):
@@ -104,18 +172,6 @@ class PropertyGetValueHolder(ConstantValueHolder):
         return self.__get.call()
     
     value = property(get_value,ConstantValueHolder.set_value)
-    
-class OperationNotSupportedError(Exception):
-    def __init__(self, operation):
-        super().__init__("Operation '{}' not supported".format(operation))
-
-class SymbolError(Exception): pass
-
-class SymbolContentError(SymbolError): pass
-
-class SymbolUnknownError(SymbolError):
-    def __init__(self, symbol_name):
-        super().__init__("Unknown symbol '{}'".format(symbol_name))
 
 __VALID_SYMBOL_PATTERN__ = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 

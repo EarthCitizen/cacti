@@ -1,32 +1,8 @@
 from cacti.runtime import *
+from cacti.exceptions import *
 
-__all__ = [
-           # Classes
-           'Callable', 'ClojureBinding', 'FunctionBinding', 'MethodBinding',
+__all__ = ['ClassDefinition', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition']
            
-           'ClassDefinition', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition'
-           ]
-           
-
-#print('EXECUTING BUILTIN')
-
-BUILTIN_SYMBOLS = SymbolTable()
-
-def register_type_definition(type_def, name):
-    BUILTIN_SYMBOLS[name] = ConstantValueHolder(type_def)
-
-def get_type_definition(name):
-    return BUILTIN_SYMBOLS[name].get_value()
-
-class UnsupportedMethodError(Exception): pass
-
-class UnknownPropertyError(Exception): pass
-
-class ArityError(Exception): pass
-
-def get_object():
-    return ObjectDefinition(get_type_definition('ObjectDefinition'), None)
-
 
 # All ObjectDefinition Instances Have This
 class ObjectDefinition:
@@ -235,145 +211,10 @@ class ValDefinition:
     @property
     def init_expr(self):
         return self.__val_init_expr
-    
-class Callable:
-    def __init__(self, content, *params):
-        self.__params = params
-        self.__content = content
-        
-    def __check_arity(self, *param_values):
-        if len(self.__params) != len(param_values):
-            raise ArityError('Parameter count does not match')
-        
-    def __make_params_table(self, *param_values):
-        param_table = SymbolTable()
-        param_iter = iter(param_values)
-        for v in self.__params:
-            param_table.add_symbol(v, ConstantValueHolder(next(param_iter)))
-        return param_table
-    
-    def call(self, *param_values):
-        self.__check_arity(*param_values)
-        param_table = self.__make_params_table(*param_values)
-        call_env = peek_call_env()
-        symbol_stack = call_env.symbol_stack
-        symbol_stack.push(param_table)
-        return_value = self.__content()
-        symbol_stack.pop()
-        return return_value
-        
-class ClojureBinding:
-    def __init__(self, call_env, kallable):
-        self.__call_env = call_env
-        self.__callable = kallable
-        
-    def call(self, *params):
-        push_call_env(self.__call_env)
-        return_value = self.__callable.call(*params)
-        pop_call_env()
-        return return_value   
-
-class FunctionBinding:
-    def __init__(self, owner, name, kallable):
-        self.__owner = owner
-        self.__name = name
-        self.__callable = kallable
-        
-    def call(self, *params):
-        push_call_env(CallEnv(self.__owner, self.__name))
-        return_value = self.__callable.call(*params)
-        pop_call_env()
-        return return_value
-        
-class MethodBinding:
-    def __init__(self, owner, name, kallable):
-        self.__owner = owner
-        self.__name = name
-        self.__callable = kallable
-        
-    def call(self, *params):
-        push_call_env(CallEnv(self.__owner, self.__name))
-        super_self = SymbolTable()
-        super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
-        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
-        peek_call_env().symbol_stack.push(super_self)
-        return_value = self.__callable.call(*params)
-        pop_call_env()
-        return return_value
 
 # class Callable(ObjectDefinition):
-#     def __init__(self, type_def, name, *param_names):
-#         super().__init__(type_def, get_object())
-#         self.__name = name
-#         self.__param_names = param_names
-#         
-#     def call(self, caller, *params):
-#         self.check_arity(caller, *params)
-#         
 #     def check_arity(self, caller, *called_params):
 #         if self.arity != len(called_params):
 #             kwargs = {'caller': caller.type.name, 'method_name': self.__name, 'exp': self.arity, 'got': len(called_params)}
 #             raise SyntaxError("{caller}.{method_name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
 #     
-    
-# class PyMethod(Method):
-#     def __init__(self, method_name, function, *param_names):
-#         type_def = get_type_definition('Method')
-#         super().__init__(type_def, method_name, *param_names)
-#         self.__function = function
-#         
-#     def call(self, target, *params):
-#         super().call(target, *params)
-#         if self.__function:
-#             return self.__function(target, *params)
-#         
-# class TypeMethod(PyMethod):
-#     def __init__(self):
-#         super().__init__('type', lambda target: target.type)
-# 
-# class IdMethod(PyMethod):
-#     def __init__(self):
-#         super().__init__('id', lambda target: target.id)
-#         
-# class NameMethod(PyMethod):
-#     def __init__(self):
-#         super().__init__('name', lambda target: target.name)
-#         
-# class NewMethod(PyMethod):
-#     def __init__(self):
-#         super().__init__('new', lambda target, *params: target.get_instance(*params))
-#         
-# class ToStringMethod(PyMethod):
-#     def __init__(self):
-#         super().__init__('to_string', lambda target: target.to_string())
-#         
-# class SuperMethod(PyMethod):
-#     def __init__(self):
-#         super().__init__('super', lambda target: target.super)
-# 
-# class HasMethodMethod(PyMethod):
-#     def __init__(self):
-#         function = lambda target, *params: target.has_method(*params)
-#         param_names = ('method_name',)
-#         super().__init__('has_method', function, param_names)
-#         
-# class PyBinaryOpMethod(PyMethod):
-#     def __init__(self, method_name):
-#         lookup = {'+': lambda a, b: a+b, '-': lambda a, b: a-b, '*': lambda a, b: a*b, '/': lambda a, b: a/b}
-#         super().__init__(method_name, lookup[method_name], 'a', 'b')
-#         
-#     def call(self, caller, *params):
-#         super().call(self, *params)
-#         return self.__op_method(caller.raw_value, params[0].raw_value)
-#         
-# class PyFunction(Function):
-#     def __init__(self, function_name, function, *param_names):
-#         type_def = get_type_definition('Function')
-#         super().__init__(type_def, function_name, *param_names)
-#         self.__function = function
-#         
-#     def call(self, *params):
-#         super().call(self, *params)
-#         if self.__function:
-#             return self.__function(*params)
-#
