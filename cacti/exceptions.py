@@ -12,8 +12,8 @@ class UnsupportedMethodError(Exception): pass
 class UnknownPropertyError(Exception): pass
 
 class OperationNotSupportedError(Exception):
-    def __init__(self, operation):
-        super().__init__("Operation '{}' not supported".format(operation))
+    def __init__(self, name, operation):
+        super().__init__("Operation '{}' not supported for '{}'".format(operation, name))
 
 class SymbolError(Exception): pass
 

@@ -12,6 +12,8 @@ class ObjectDefinition:
         self.__selfobj = self
         self.__superobj = superobj
         
+        self.__internal_table = SymbolTable()
+        
         if self.__superobj:
             self.__superobj.set_selfobj(self)
         
@@ -25,6 +27,10 @@ class ObjectDefinition:
         
         self.__public_table = self.__property_table
         self.__private_table = SymbolTableChain(self.__property_table, self.__field_table)
+        
+    @property
+    def internal_table(self):
+        return self.__internal_table
         
     def set_typeobj(self, typeobj):
         self.__typeobj = typeobj
@@ -99,6 +105,10 @@ class ObjectDefinition:
     
     def __str__(self):
         return '{}<{}>'.format(self.typeobj.name, id(self))
+
+class PrimitiveObjectDefinition(ObjectDefinition):
+    def __init__(self, superobj, *, typeobj=None, name=''):
+        super().__init__(superobj, typeobj=typeobj, name=name)
 
 class Closure(ObjectDefinition):
     def __init__(self, closure_call_env, closure_callable):

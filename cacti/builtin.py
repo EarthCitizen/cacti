@@ -12,6 +12,15 @@ class _StubCallable:
         self.__content()
 
 ### HOOK NEW ###
+def _hook_new_callable_content():
+    class_def = peek_call_env().owner
+    superclass_def = class_def.superclass
+    superobj = superclass_def.hook_table['()'].call() if superclass_def else None
+    obj = ObjectDefinition(superobj, typeobj=class_def)
+    _init_object_def_from_class_def(obj, class_def)
+    
+    return obj
+
 def _make_hook_new_method_def():
     def hook_new_body():
         class_def = peek_call_env().owner
@@ -22,7 +31,7 @@ def _make_hook_new_method_def():
         
         return obj
         
-    hook_new_callable = Callable(hook_new_body)
+    hook_new_callable = Callable(_hook_new_callable_content)
     
     return MethodDefinition('()', hook_new_callable)
 
@@ -46,7 +55,8 @@ def _make_hook_property_of_method_def():
 
 def _make_method_def_op_not_supported(operation, *param_names):
     def do_raise():
-        raise OperationNotSupportedError(operation)
+        call_env = peek_call_env()
+        raise OperationNotSupportedError(call_env.owner.selfobj.typeobj.name, call_env.name)
     method_callable = _StubCallable(do_raise)
     return MethodDefinition(operation, method_callable)
     
@@ -116,11 +126,13 @@ def _init_object_def_from_class_def(object_def, class_def):
     for prop_def in class_def.property_definitions:
         object_def.add_property(prop_def.name, prop_def.getter_callable, prop_def.setter_callable)
         
+    # Initialize constants
     for val_def in class_def.val_definitions:
-        object_def.add_val(val_def.name, val_def.init_expr)
+        object_def.add_val(val_def.name, val_def.init_expr())
         
+    # Initialize vars after constants
     for var_def in class_def.var_definitions:
-        object_def.add_var(var_def.name, var_def.init_expr)
+        object_def.add_var(var_def.name, var_def.init_expr())
         
     object_def.set_typeobj(class_def)
 
@@ -171,3 +183,21 @@ _bootstrap_basic_types()
 _make_type('Function')
 _make_type('Closure')
 _make_type('Method')
+
+def _make_string_class():
+    #def __init__(self, superobj, name, *, typeobj=None, superclass=None):
+    superobj = get_builtin('Object').hook_table['()'].call()
+    typeobj = get_type('Class')
+    superclass = get_builtin('Object')
+    string_classdef = ClassDefinition(superobj, 'String', typeobj=typeobj, superclass=superclass)
+    
+    def string_new_callable_content():
+        obj = _hook_new_callable_content()
+        obj.internal_table.add_symbol('primitive', ConstantValueHolder(''))
+        return obj
+        
+    string_classdef.add_hook('()', Callable(string_new_callable_content))
+    
+    add_builtin('String', string_classdef)
+    
+_make_string_class()
