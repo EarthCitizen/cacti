@@ -1,3 +1,4 @@
+import operator
 from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
@@ -184,6 +185,33 @@ _make_type('Function')
 _make_type('Closure')
 _make_type('Method')
 
+
+_PRIMITIVE_OPERATION_FUNCTIONS = {
+        '+': operator.add
+    }
+
+def _make_primitive_op_method_def(operation):
+    
+    def callable_content():
+        call_env = peek_call_env()
+        selfobj = call_env.symbol_stack['self']
+        other = call_env.symbol_stack['other']
+        selfobj_primitive = selfobj.internal_table['primitive']
+        other_primitive = other.internal_table['primitive']
+        result = _PRIMITIVE_OPERATION_FUNCTIONS[operation](selfobj_primitive, other_primitive)
+        new_object = get_builtin(selfobj.type.name).hook_table['()'].call()
+        new_object.internal_table.add_symbol('primitive', ConstantValueHolder(result))
+        return new_object
+    
+    op_callable = Callable(callable_content, 'other')
+    
+    return MethodDefinition(operation, op_callable)
+        
+
+_PRIMITIVE_OPERATION_METHOD_DEFS = {
+        '+': _make_primitive_op_method_def('+')
+    }
+
 def _make_string_class():
     superobj = get_builtin('Object').hook_table['()'].call()
     typeobj = get_type('Class')
@@ -196,6 +224,8 @@ def _make_string_class():
         return obj
         
     string_classdef.add_hook('()', Callable(string_new_callable_content))
+    
+    string_classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
     
     add_builtin('String', string_classdef)
     
