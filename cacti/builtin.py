@@ -1,9 +1,10 @@
 import operator
+import types
 from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
 
-__all__ = ['get_type', 'get_builtin']
+__all__ = ['get_type', 'get_builtin', 'make_float', 'make_integer', 'make_string']
 
 class _StubCallable:
     def __init__(self, content):
@@ -89,7 +90,7 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_callable=Callable(lambda: str(peek_call_env().symbol_stack['self']))),
+                        PropertyDefinition('string', getter_callable=Callable(lambda: make_string(str(peek_call_env().symbol_stack['self'])))),
                         PropertyDefinition('type',   getter_callable=Callable(lambda: peek_call_env().symbol_stack['self'].typeobj)),
                         PropertyDefinition('id',     getter_callable=Callable(lambda: id(peek_call_env().symbol_stack['self'])))
                     }
@@ -187,7 +188,10 @@ _make_type('Method')
 
 
 _PRIMITIVE_OPERATION_FUNCTIONS = {
-        '+': operator.add
+        '*': operator.mul,
+        '/': operator.floordiv,
+        '+': operator.add,
+        '-': operator.sub
     }
 
 def _make_primitive_op_method_def(operation):
@@ -196,11 +200,9 @@ def _make_primitive_op_method_def(operation):
         call_env = peek_call_env()
         selfobj = call_env.symbol_stack['self']
         other = call_env.symbol_stack['other']
-        selfobj_primitive = selfobj.internal_table['primitive']
-        other_primitive = other.internal_table['primitive']
-        result = _PRIMITIVE_OPERATION_FUNCTIONS[operation](selfobj_primitive, other_primitive)
-        new_object = get_builtin(selfobj.type.name).hook_table['()'].call()
-        new_object.internal_table.add_symbol('primitive', ConstantValueHolder(result))
+        result = _PRIMITIVE_OPERATION_FUNCTIONS[operation](selfobj.primitive, other.primitive)
+        new_object = get_builtin(selfobj.typeobj.name).hook_table['()'].call()
+        new_object.primitive = result
         return new_object
     
     op_callable = Callable(callable_content, 'other')
@@ -209,24 +211,76 @@ def _make_primitive_op_method_def(operation):
         
 
 _PRIMITIVE_OPERATION_METHOD_DEFS = {
-        '+': _make_primitive_op_method_def('+')
+        '*': _make_primitive_op_method_def('*'),
+        '/': _make_primitive_op_method_def('/'),
+        '+': _make_primitive_op_method_def('+'),
+        '-': _make_primitive_op_method_def('-')
     }
 
 def _make_string_class():
     superobj = get_builtin('Object').hook_table['()'].call()
     typeobj = get_type('Class')
     superclass = get_builtin('Object')
-    string_classdef = ClassDefinition(superobj, 'String', typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(superobj, 'String', typeobj=typeobj, superclass=superclass)
     
-    def string_new_callable_content():
+    def new_callable_content():
         obj = _hook_new_callable_content()
-        obj.internal_table.add_symbol('primitive', ConstantValueHolder(''))
+        obj.primitive = ''
+        obj.to_string = types.MethodType(lambda self: self.primitive, obj)
         return obj
         
-    string_classdef.add_hook('()', Callable(string_new_callable_content))
+    classdef.add_hook('()', Callable(new_callable_content))
     
-    string_classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
+    classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
     
-    add_builtin('String', string_classdef)
+    string_callable_content = lambda: peek_call_env().symbol_stack['self']
+    string_prop_def = PropertyDefinition('string', getter_callable=Callable(string_callable_content))
+    classdef.add_property_definition(string_prop_def)
     
+    add_builtin(classdef.name, classdef)
+
+def _make_numeric_class(class_name, converter):
+    superobj = get_builtin('Object').hook_table['()'].call()
+    typeobj = get_type('Class')
+    superclass = get_builtin('Object')
+    classdef = ClassDefinition(superobj, class_name, typeobj=typeobj, superclass=superclass)
+    
+    def new_callable_content():
+        obj = _hook_new_callable_content()
+        obj.primitive = 0
+        obj.to_string = types.MethodType(lambda self: str(self.primitive), obj)
+        return obj
+        
+    classdef.add_hook('()', Callable(new_callable_content))
+    
+    for operation in ['*', '/', '+', '-']:
+        classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS[operation])
+        
+    string_callable_content = lambda: make_string(str(peek_call_env().symbol_stack['self'].primitive))
+    string_prop_def = PropertyDefinition('string', getter_callable=Callable(string_callable_content))
+    classdef.add_property_definition(string_prop_def)
+    
+    add_builtin(classdef.name, classdef)
+
 _make_string_class()
+_make_numeric_class('Integer', int)
+_make_numeric_class('Float', float)
+
+def make_string(value=''):
+    assert isinstance(value, str)
+    obj = get_builtin('String').hook_table['()'].call()
+    obj.primitive = value
+    return obj
+
+def make_float(value=float(0)):
+    assert (isinstance(value, float) or isinstance(value, int))
+    value = float(value)
+    obj = get_builtin('Float').hook_table['()'].call()
+    obj.primitive = value
+    return obj
+
+def make_integer(value=0):
+    assert isinstance(value, int)
+    obj = get_builtin('Integer').hook_table['()'].call()
+    obj.primitive = value
+    return obj

@@ -102,8 +102,17 @@ class ObjectDefinition:
             raise Exception('TBD')
         
         self.__property_table.add_symbol(property_name, value_holder)
+        
+    def __repr__(self):
+        return str(self)
     
     def __str__(self):
+        return self.to_string()
+    
+    # This is a workaround to the fact that
+    # str() will not call the __str__() that
+    # is dynamically added to an object instance
+    def to_string(self):
         return '{}<{}>'.format(self.typeobj.name, id(self))
 
 class PrimitiveObjectDefinition(ObjectDefinition):
