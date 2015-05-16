@@ -87,7 +87,6 @@ class ObjectDefinition:
         
     def add_property(self, property_name, get_callable, set_callable):
         value_holder = None
-        private_table = self.__private_table
         
         if get_callable is None and set_callable is None:
             value_holder = ValueHolder()

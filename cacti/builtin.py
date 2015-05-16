@@ -4,7 +4,7 @@ from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
 
-__all__ = ['get_type', 'get_builtin', 'make_float', 'make_integer', 'make_string']
+__all__ = ['get_type', 'get_builtin', 'make_float', 'make_integer', 'make_object', 'make_string']
 
 class _StubCallable:
     def __init__(self, content):
@@ -265,6 +265,10 @@ def _make_numeric_class(class_name, converter):
 _make_string_class()
 _make_numeric_class('Integer', int)
 _make_numeric_class('Float', float)
+
+def make_object():
+    obj = get_builtin('Object').hook_table['()'].call()
+    return obj
 
 def make_string(value=''):
     assert isinstance(value, str)
