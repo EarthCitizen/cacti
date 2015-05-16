@@ -43,20 +43,18 @@ class TestValueExpression:
         assert obj is expr()
 
 class TestValDeclarationStatement:
-    @pytest.fixture()
+    @pytest.fixture(autouse=True)
     def set_up_env(self):
         call_env = CallEnv(make_object(), 'main')
         call_env.symbol_stack.push(SymbolTable())
         push_call_env(call_env)
     
-    @pytest.mark.usefixtures('set_up_env')
     def test_creates_symbol_with_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
         call_env = peek_call_env()
         assert call_env.symbol_stack['x'].primitive == make_integer(5).primitive
     
-    @pytest.mark.usefixtures('set_up_env')
     def test_creates_constant(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
