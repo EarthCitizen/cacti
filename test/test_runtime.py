@@ -4,6 +4,15 @@ from cacti.runtime import *
 from cacti.builtin import *
 from cacti.lang import *
 
+def set_up_env(**kwargs):
+        call_env = CallEnv(make_object(), 'test')
+        table = SymbolTable()
+        
+        for k, v in kwargs.iteritems():
+            table.add_symbol(k, v)
+            
+        push_call_env(call_env)
+
 class TestValueHolder:
     def test_accepts_value(self):
         holder = ValueHolder(123)
@@ -25,35 +34,48 @@ class TestConstantValueHolder:
             
 class TestPropertyGetSetValueHolder:
     def test_getter_executed(self):
-        c1 = SymbolTable()
-        c1.add_symbol('x', ConstantValueHolder(5))
-        c1.add_symbol('y', ConstantValueHolder(6))
-        c1.add_symbol('z', ConstantValueHolder(7))
+        set_up_env()
+        
+        owner = make_object()
+        owner.add_val('x', ConstantValueHolder(make_integer(5)))
+        owner.add_val('y', ConstantValueHolder(make_integer(6)))
+        owner.add_val('z', ConstantValueHolder(make_integer(7)))
          
-        def multiply_values(context):
-            return context['x'] * context['y'] * context['z']
+        def multiply_values():
+            table = peek_call_env().symbol_stack
+            x = table['x']
+            y = table['y']
+            z = table['z']
+            result = x.hook_table['*'].call(y)
+            result = result.hook_table['*'].call(z)
+            return result
         
         _callable = Callable(multiply_values)
+        
+        get_binding = MethodBinding(owner, name, _callable)
          
         bound_get = BoundCallable(_callable, c1)
         
         _property = PropertyGetSetValueHolder(bound_get, None)
         
-        assert 210 == _property.get_value()
+        assert make_integer(210).primitive == _property.get_value().primitive
      
     def test_setter_executed(self):
-        c1 = SymbolTable()
-        c1.add_symbol('x', ValueHolder(5))
+        set_up_env(x=ConstantValueHolder(make_integer(5)))
         
         def get_value(context):
-            return context['x']
+            #return context['x']
+            table = peek_call_env().symbol_stack
+            return table['x']
         
         get_callable = Callable(get_value)
         
         bound_get = BoundCallable(get_callable, c1)
         
-        def set_value(context):
-            context['x'] = context['value']
+        def set_value():
+            #context['x'] = context['value']
+            table = peek_call_env().symbol_stack
+            table['x'] = table['value']
         
         set_callable = Callable(set_value, 'value')
         #set_callable.add_param('value')
