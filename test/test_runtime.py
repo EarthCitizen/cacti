@@ -1,4 +1,6 @@
 import pytest
+from cacti.exceptions import *
+from cacti.runtime import *
 from cacti.builtin import *
 from cacti.lang import *
 
@@ -89,6 +91,8 @@ class TestPropertyGetValueHolder:
             return context['x']
         
         get_callable = Callable(get_value)
+        
+        #MethodBinding(property_name, get_callable)
         
         bound_get = BoundCallable(get_callable, c1)
         

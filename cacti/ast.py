@@ -1,15 +1,15 @@
 from cacti.runtime import *
 
-__all__ = [ 'OperationExpression', 'ReferenceExpression', 'ValueExpression' ]
+__all__ = [ 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'ValDeclarationStatement' ]
 
-class Expression:
+class Evaluable:
     def __call__(self):
         return self.eval()
     
     def eval(self):
         pass
     
-class OperationExpression(Expression):
+class OperationExpression(Evaluable):
     def __init__(self, operand_expr, operation, *operation_expr_params):
         self.__operand_expr = operand_expr
         self.__operation = operation
@@ -28,7 +28,7 @@ class OperationExpression(Expression):
                     self.__operation,
                     repr(self.__operation_expr_params))
         
-class ReferenceExpression(Expression):
+class ReferenceExpression(Evaluable):
     def __init__(self, symbol):
         self.__symbol = symbol
     
@@ -38,7 +38,7 @@ class ReferenceExpression(Expression):
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, repr(self.__symbol))
     
-class ValueExpression(Expression):
+class ValueExpression(Evaluable):
     def __init__(self, value):
         self.__value = value
         
@@ -47,3 +47,15 @@ class ValueExpression(Expression):
     
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, repr(self.__value))
+
+class ValDeclarationStatement(Evaluable):
+    def __init__(self, symbol, init_expr):
+        self.__symbol = symbol
+        self.__init_expr = init_expr
+        
+    def eval(self):
+        value = self.__init_expr()
+        call_env = peek_call_env()
+        table = call_env.symbol_stack.peek()
+        table.add_symbol(self.__symbol, ConstantValueHolder(value))
+        return value

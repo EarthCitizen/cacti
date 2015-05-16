@@ -297,8 +297,11 @@ class SymbolTableStack:
     def push(self, table):
         self.__stack.appendleft(table)
         
+    def peek(self):
+        return self.__stack[0]
+        
     def pop(self):
-        self.__stack.popleft()
+        return self.__stack.popleft()
         
     def __contains__(self, symbol_name):
         for table in self.__stack:
