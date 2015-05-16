@@ -102,6 +102,22 @@ class ObjectDefinition:
         
         self.__property_table.add_symbol(property_name, value_holder)
         
+    def __public_or_private_table(self):
+        call_owner = peek_call_env(1).owner
+        curr_env = peek_call_env()
+        curr_owner = curr_env.owner
+        
+        if call_owner is curr_owner:
+            return curr_owner.private_table
+        else:
+            return curr_owner.public_table
+    
+    def __getitem__(self, symbol_name):
+        return self.__public_or_private_table()[symbol_name]
+    
+    def __setitem__(self, symbol_name, symbol_value):
+        self.__public_or_private_table()[symbol_name] = symbol_value
+    
     def __repr__(self):
         return str(self)
     
