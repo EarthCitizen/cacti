@@ -69,18 +69,17 @@ class FunctionBinding:
         return return_value
         
 class MethodBinding:
-    def __init__(self, owner, name, kallable):
+    def __init__(self, owner, method_def):
         self.__owner = owner
-        self.__name = name
-        self.__callable = kallable
+        self.__method_def = method_def
         
     def call(self, *params):
-        push_call_env(CallEnv(self.__owner, self.__name))
+        push_call_env(CallEnv(self.__owner, self.__method_def.name))
         super_self = SymbolTable()
         super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
         super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
         peek_call_env().symbol_stack.push(super_self)
-        return_value = self.__callable.call(*params)
+        return_value = self.__method_def.callable.call(*params)
         pop_call_env()
         return return_value
 

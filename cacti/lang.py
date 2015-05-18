@@ -70,9 +70,9 @@ class ObjectDefinition:
     def name(self):
         return self.__name
         
-    def add_hook(self, hook_name, hook_callable):
-        binding = MethodBinding(self, hook_name, hook_callable)
-        self.__hook_table.add_symbol(hook_name, ConstantValueHolder(binding))
+    def add_hook(self, hook_method_def):
+        binding = MethodBinding(self, hook_method_def)
+        self.__hook_table.add_symbol(hook_method_def.name, ConstantValueHolder(binding))
     
     def add_val(self, val_name, val_value):
         self.__field_table.add_symbol(val_name, ConstantValueHolder(val_value))
@@ -80,23 +80,26 @@ class ObjectDefinition:
     def add_var(self, var_name, var_value):
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
-    def add_method(self, method_name, method_callable):
-        method = Method(self, method_name, method_callable)
+    def add_method(self, method_def):
+        method = Method(self, method_def)
         const_value = ConstantValueHolder(method)
-        self.__property_table.add_symbol(method_name, const_value)
+        self.__property_table.add_symbol(method_def.name, const_value)
         
-    def add_property(self, property_name, get_callable, set_callable):
+    def add_property(self, property_def):
         value_holder = None
+        property_name = property_def.name
+        get_method_def = property_def.getter_method_def
+        set_method_def = property_def.setter_method_def
         
-        if get_callable is None and set_callable is None:
+        if get_method_def is None and set_method_def is None:
             value_holder = ValueHolder()
-        elif get_callable is not None and set_callable is not None:
+        elif get_method_def is not None and set_method_def is not None:
             value_holder = PropertyGetValueHolder(
-                MethodBinding(self, property_name, get_callable))
-        elif get_callable is not None and set_callable is None:
+                MethodBinding(self, property_name, get_method_def))
+        elif get_method_def is not None and set_method_def is None:
             value_holder = PropertyGetSetValueHolder(
-                MethodBinding(self, property_name, get_callable),
-                MethodBinding(self, property_name, set_callable))
+                MethodBinding(self, get_method_def),
+                MethodBinding(self, set_method_def))
         else:
             raise Exception('TBD')
         
@@ -140,7 +143,7 @@ class Closure(ObjectDefinition):
         binding = ClosureBinding(closure_call_env, closure_callable)
         superobj = get_builtin('Object').hook_table['()'].call()
         super().__init__(superobj, typeobj=get_type('Closure'))
-        self.add_hook('()', binding)
+        self.add_hook(MethodDefinition('()', binding))
         
 class Function(ObjectDefinition):
     def __init__(self, function_name, function_callable):
@@ -148,18 +151,18 @@ class Function(ObjectDefinition):
         binding = FunctionBinding(self, function_name, function_callable)
         superobj = get_builtin('Object').hook_table['()'].call()
         super().__init__(superobj, typeobj=get_type('Function'), name=function_name)
-        self.add_hook('()', binding)
+        self.add_hook(MethodDefinition('()', binding))
         
     def __str__(self):
         return "Function<'{}'>".format(self.name)
         
 class Method(ObjectDefinition):
-    def __init__(self, method_owner, method_name, method_callable):
+    def __init__(self, method_owner, method_def):
         from cacti.builtin import get_builtin, get_type
-        binding = MethodBinding(method_owner, method_name, method_callable)
+        binding = MethodBinding(method_owner, method_def)
         superobj = get_builtin('Object').hook_table['()'].call()
-        super().__init__(superobj, typeobj=get_type('Method'), name=method_name)
-        self.add_hook('()', binding)
+        super().__init__(superobj, typeobj=get_type('Method'), name=method_def.name)
+        self.add_hook(MethodDefinition('()', binding))
         
     def __str__(self):
         return "Method<'{}'>".format(self.name)
@@ -167,10 +170,8 @@ class Method(ObjectDefinition):
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
         super().__init__(superobj, typeobj=typeobj, name=name)
-        self.add_property(
-            'name',
-            Callable(lambda: peek_call_env().symbol_stack['self'].name),
-            None)
+        gc = Callable(lambda: peek_call_env().symbol_stack['self'].name)
+        self.add_property(PropertyDefinition('name',getter_callable=gc))
     
     def __str__(self):
         return '{}<{}>'.format('Type', self.name)
@@ -246,20 +247,20 @@ class MethodDefinition:
 class PropertyDefinition:
     def __init__(self, property_name, *, getter_callable=None, setter_callable=None):
         self.__property_name = property_name
-        self.__getter_callable = getter_callable
-        self.__setter_callable = setter_callable
+        self.__getter_method_def = MethodDefinition(property_name, getter_callable) if getter_callable else None
+        self.__setter_method_def = MethodDefinition(property_name, setter_callable) if setter_callable else None
         
     @property
     def name(self):
         return self.__property_name
         
     @property
-    def getter_callable(self):
-        return self.__getter_callable
+    def getter_method_def(self):
+        return self.__getter_method_def
         
     @property
-    def setter_callable(self):
-        return self.__setter_callable
+    def setter_method_def(self):
+        return self.__setter_method_def
         
 class ValDefinition:
     def __init__(self, val_name, val_init_expr):

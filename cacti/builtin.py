@@ -105,7 +105,7 @@ def _init_class_def_from_data(class_def):
     property_defs = object_dict['property_defs']
     
     for hook in hooks:
-        class_def.add_hook(hook.name, hook.callable)
+        class_def.add_hook(hook)
     
     for hook_def in hook_defs:
         class_def.add_hook_definition(hook_def)
@@ -120,13 +120,13 @@ def _init_class_def_from_data(class_def):
 def _init_object_def_from_class_def(object_def, class_def):
     
     for hook_def in class_def.hook_definitions:
-        object_def.add_hook(hook_def.name, hook_def.callable)
+        object_def.add_hook(hook_def)
         
     for method_def in class_def.method_definitions:
-        object_def.add_method(method_def.name, method_def.callable)
+        object_def.add_method(method_def)
         
     for prop_def in class_def.property_definitions:
-        object_def.add_property(prop_def.name, prop_def.getter_callable, prop_def.setter_callable)
+        object_def.add_property(prop_def)
         
     # Initialize constants
     for val_def in class_def.val_definitions:
@@ -229,7 +229,7 @@ def _make_string_class():
         obj.to_string = types.MethodType(lambda self: self.primitive, obj)
         return obj
         
-    classdef.add_hook('()', Callable(new_callable_content))
+    classdef.add_hook(MethodDefinition('()', Callable(new_callable_content)))
     
     classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
     
@@ -251,7 +251,7 @@ def _make_numeric_class(class_name, converter):
         obj.to_string = types.MethodType(lambda self: str(self.primitive), obj)
         return obj
         
-    classdef.add_hook('()', Callable(new_callable_content))
+    classdef.add_hook(MethodDefinition('()', Callable(new_callable_content)))
     
     for operation in ['*', '/', '+', '-']:
         classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS[operation])
