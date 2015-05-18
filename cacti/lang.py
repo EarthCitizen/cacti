@@ -110,6 +110,8 @@ class ObjectDefinition:
         curr_env = peek_call_env()
         curr_owner = curr_env.owner
         
+        raise Exception(curr_owner.typeobj + " " + str(call_owner))
+        
         if call_owner is curr_owner:
             return curr_owner.private_table
         else:

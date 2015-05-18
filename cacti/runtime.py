@@ -193,6 +193,8 @@ class SymbolTable:
         if not isinstance(from_dict, dict):
             raise TypeError("from_map must be a 'dict'")
         
+        self.__symbol_validator = symbol_validator
+        
         self.__table = {}
         
         for symbol,  content in from_dict.items():
@@ -202,7 +204,6 @@ class SymbolTable:
             raise TypeError("parent_table must be a 'SymbolTable'")
         
         self.__parent_table = parent_table
-        self.__symbol_validator = symbol_validator
         
     def add_symbol(self, symbol, content):
         self.__check_symbol(symbol)
