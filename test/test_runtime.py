@@ -8,7 +8,7 @@ def set_up_env(**kwargs):
         call_env = CallEnv(make_object(), 'test')
         table = SymbolTable()
         
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             table.add_symbol(k, v)
             
         push_call_env(call_env)
@@ -36,92 +36,79 @@ class TestPropertyGetSetValueHolder:
     def test_getter_executed(self):
         set_up_env()
         
-        owner = make_object()
-        owner.add_val('x', ConstantValueHolder(make_integer(5)))
-        owner.add_val('y', ConstantValueHolder(make_integer(6)))
-        owner.add_val('z', ConstantValueHolder(make_integer(7)))
+        def get_value():
+            return make_integer(456)
+        
+        get_value_callable = Callable(get_value)
+        
+        method_def = MethodDefinition('get_value', get_value_callable)
+        
+        get_binding = MethodBinding(make_object(), method_def)
          
-        def multiply_values():
-            table = peek_call_env().symbol_stack
-            x = table['x']
-            y = table['y']
-            z = table['z']
-            result = x.hook_table['*'].call(y)
-            result = result.hook_table['*'].call(z)
-            return result
+        _property = PropertyGetSetValueHolder(get_binding, None)
         
-        _callable = Callable(multiply_values)
-        
-        get_binding = MethodBinding(owner, name, _callable)
-         
-        bound_get = BoundCallable(_callable, c1)
-        
-        _property = PropertyGetSetValueHolder(bound_get, None)
-        
-        assert make_integer(210).primitive == _property.get_value().primitive
+        assert make_integer(456).primitive == _property.get_value().primitive
      
     def test_setter_executed(self):
-        set_up_env(x=ConstantValueHolder(make_integer(5)))
+        set_up_env()
         
-        def get_value(context):
-            #return context['x']
-            table = peek_call_env().symbol_stack
-            return table['x']
-        
-        get_callable = Callable(get_value)
-        
-        bound_get = BoundCallable(get_callable, c1)
-        
-        def set_value():
-            #context['x'] = context['value']
-            table = peek_call_env().symbol_stack
-            table['x'] = table['value']
-        
-        set_callable = Callable(set_value, 'value')
-        #set_callable.add_param('value')
+        owner = make_object()
+        owner.add_var('x', make_integer(999))
          
-        bound_set = BoundCallable(set_callable, c1)
-        
+        def get_value():
+            table = peek_call_env().symbol_stack
+            return table['self'].hook_table['.'].call('x')
+         
+        get_callable = Callable(get_value)
+        get_method_def = MethodDefinition('some_prop', get_callable)
+        bound_get = MethodBinding(owner, get_method_def)
+         
+        def set_value():
+            table = peek_call_env().symbol_stack
+            table['self']['x'] = table['value']
+         
+        set_callable = Callable(set_value, 'value')
+        set_method_def = MethodDefinition('some_prop', set_callable)
+        bound_set = MethodBinding(owner, set_method_def)
+         
         _property = PropertyGetSetValueHolder(bound_get, bound_set)
-        _property.set_value(100)
-        
-        assert 100 == _property.get_value()
-        
+        _property.set_value(make_integer(100))
+         
+        assert make_integer(100).primitive == _property.get_value().primitive
+         
 class TestPropertyGetValueHolder:
     def test_getter_executed(self):
-        c1 = SymbolTable()
-        c1.add_symbol('x', ConstantValueHolder(5))
-        c1.add_symbol('y', ConstantValueHolder(6))
-        c1.add_symbol('z', ConstantValueHolder(7))
+        set_up_env()
+        
+        def get_value():
+            return make_integer(456)
+        
+        get_value_callable = Callable(get_value)
+        
+        method_def = MethodDefinition('get_value', get_value_callable)
+        
+        get_binding = MethodBinding(make_object(), method_def)
          
-        def multiply_values(context):
-            return context['x'] * context['y'] * context['z']
+        _property = PropertyGetValueHolder(get_binding)
         
-        _callable = Callable(multiply_values)
-         
-        bound_get = BoundCallable(_callable, c1)
-        
-        _property = PropertyGetValueHolder(bound_get)
-        
-        assert 210 == _property.get_value()
-     
+        assert make_integer(456).primitive == _property.get_value().primitive
+      
     def test_setter_throws_constant_error(self):
-        c1 = SymbolTable()
-        c1.add_symbol('x', ValueHolder(5))
+        set_up_env()
         
-        def get_value(context):
-            return context['x']
+        def get_value():
+            return make_integer(456)
         
-        get_callable = Callable(get_value)
+        get_value_callable = Callable(get_value)
         
-        #MethodBinding(property_name, get_callable)
+        method_def = MethodDefinition('get_value', get_value_callable)
         
-        bound_get = BoundCallable(get_callable, c1)
-        
-        _property = PropertyGetValueHolder(bound_get)
-        
+        get_binding = MethodBinding(make_object(), method_def)
+         
+        _property = PropertyGetValueHolder(get_binding)
+         
         with pytest.raises(ConstantValueError):
-            _property.set_value(100)
+            _property.set_value(make_integer(100))
 
             
 class TestIsValidSymbol:
