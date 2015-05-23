@@ -107,7 +107,7 @@ class ObjectDefinition:
         
     def __public_or_private_table(self, petitioner):
         # Is it me asking for a property?
-        if petitioner is self.selfobj:
+        if petitioner is self:
             return self.private_table
         else:
             return self.public_table
