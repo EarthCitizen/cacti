@@ -4,7 +4,39 @@ from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
 
-__all__ = ['get_type', 'get_builtin', 'make_float', 'make_integer', 'make_object', 'make_string']
+__all__ = ['get_type', 'get_builtin', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string']
+
+def make_object():
+    obj = get_builtin('Object').hook_table['()'].call()
+    return obj
+
+def make_main():
+    typedef_superobj = make_object()
+    main_typedef = TypeDefinition(typedef_superobj, 'Main')
+    main_typedef.set_typeobj(get_type('Type'))
+    main_superobj = make_object()
+    main = ObjectDefinition(main_superobj, name='main')
+    main.set_typeobj(main_typedef)
+    return main
+
+def make_string(value=''):
+    assert isinstance(value, str)
+    obj = get_builtin('String').hook_table['()'].call()
+    obj.primitive = value
+    return obj
+
+def make_float(value=float(0)):
+    assert (isinstance(value, float) or isinstance(value, int))
+    value = float(value)
+    obj = get_builtin('Float').hook_table['()'].call()
+    obj.primitive = value
+    return obj
+
+def make_integer(value=0):
+    assert isinstance(value, int)
+    obj = get_builtin('Integer').hook_table['()'].call()
+    obj.primitive = value
+    return obj
 
 class _StubCallable:
     def __init__(self, content):
@@ -240,7 +272,7 @@ def _make_string_class():
     add_builtin(classdef.name, classdef)
 
 def _make_numeric_class(class_name, converter):
-    superobj = get_builtin('Object').hook_table['()'].call()
+    superobj = make_object() #get_builtin('Object').hook_table['()'].call()
     typeobj = get_type('Class')
     superclass = get_builtin('Object')
     classdef = ClassDefinition(superobj, class_name, typeobj=typeobj, superclass=superclass)
@@ -266,25 +298,3 @@ _make_string_class()
 _make_numeric_class('Integer', int)
 _make_numeric_class('Float', float)
 
-def make_object():
-    obj = get_builtin('Object').hook_table['()'].call()
-    return obj
-
-def make_string(value=''):
-    assert isinstance(value, str)
-    obj = get_builtin('String').hook_table['()'].call()
-    obj.primitive = value
-    return obj
-
-def make_float(value=float(0)):
-    assert (isinstance(value, float) or isinstance(value, int))
-    value = float(value)
-    obj = get_builtin('Float').hook_table['()'].call()
-    obj.primitive = value
-    return obj
-
-def make_integer(value=0):
-    assert isinstance(value, int)
-    obj = get_builtin('Integer').hook_table['()'].call()
-    obj.primitive = value
-    return obj

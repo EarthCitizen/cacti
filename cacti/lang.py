@@ -130,7 +130,10 @@ class ObjectDefinition:
     # str() will not call the __str__() that
     # is dynamically added to an object instance
     def to_string(self):
-        return '{}<{}>'.format(self.typeobj.name, id(self))
+        if (self.name is None) or ('' == self.name):
+            return '{}<{}>'.format(self.typeobj.name, id(self))
+        else:
+            return "{}<'{}'>".format(self.typeobj.name, self.name)
 
 class PrimitiveObjectDefinition(ObjectDefinition):
     def __init__(self, superobj, *, typeobj=None, name=''):
@@ -152,9 +155,6 @@ class Function(ObjectDefinition):
         super().__init__(superobj, typeobj=get_type('Function'), name=function_name)
         self.add_hook(MethodDefinition('()', binding))
         
-    def __str__(self):
-        return "Function<'{}'>".format(self.name)
-        
 class Method(ObjectDefinition):
     def __init__(self, method_owner, method_def):
         from cacti.builtin import get_builtin, get_type
@@ -162,9 +162,6 @@ class Method(ObjectDefinition):
         superobj = get_builtin('Object').hook_table['()'].call()
         super().__init__(superobj, typeobj=get_type('Method'), name=method_def.name)
         self.add_hook(MethodDefinition('()', binding))
-        
-    def __str__(self):
-        return "Method<'{}'>".format(self.name)
         
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
