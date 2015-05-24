@@ -4,14 +4,14 @@ from cacti.runtime import *
 from cacti.builtin import *
 from cacti.lang import *
 
-def set_up_env(**kwargs):
-        call_env = CallEnv(make_object(), 'test')
-        table = SymbolTable()
-        
-        for k, v in kwargs.items():
-            table.add_symbol(k, v)
-            
-        push_call_env(call_env)
+# def set_up_env(**kwargs):
+#         call_env = CallEnv(make_object(), 'test')
+#         table = SymbolTable()
+#         
+#         for k, v in kwargs.items():
+#             table.add_symbol(k, v)
+#             
+#         push_call_env(call_env)
 
 class TestValueHolder:
     def test_accepts_value(self):
@@ -31,11 +31,10 @@ class TestConstantValueHolder:
         with pytest.raises(ConstantValueError):
             holder = ConstantValueHolder(123)
             holder.value = 456
-            
+
+@pytest.mark.usefixtures('set_up_env')            
 class TestPropertyGetSetValueHolder:
     def test_getter_executed(self):
-        set_up_env()
-        
         def get_value():
             return make_integer(456)
         
@@ -50,8 +49,6 @@ class TestPropertyGetSetValueHolder:
         assert make_integer(456).primitive == _property.get_value().primitive
      
     def test_setter_executed(self):
-        set_up_env()
-        
         owner = make_object()
         owner.add_var('x', make_integer(999))
          
@@ -75,11 +72,10 @@ class TestPropertyGetSetValueHolder:
         _property.set_value(make_integer(100))
          
         assert make_integer(100).primitive == _property.get_value().primitive
-         
+
+@pytest.mark.usefixtures('set_up_env')
 class TestPropertyGetValueHolder:
     def test_getter_executed(self):
-        set_up_env()
-        
         def get_value():
             return make_integer(456)
         
@@ -94,8 +90,6 @@ class TestPropertyGetValueHolder:
         assert make_integer(456).primitive == _property.get_value().primitive
       
     def test_setter_throws_constant_error(self):
-        set_up_env()
-        
         def get_value():
             return make_integer(456)
         

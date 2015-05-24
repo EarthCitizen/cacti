@@ -42,13 +42,8 @@ class TestValueExpression:
         expr = ValueExpression(obj)
         assert obj is expr()
 
+@pytest.mark.usefixtures('set_up_env')
 class TestValDeclarationStatement:
-    @pytest.fixture(autouse=True)
-    def set_up_env(self):
-        call_env = CallEnv(make_object(), 'main')
-        call_env.symbol_stack.push(SymbolTable())
-        push_call_env(call_env)
-    
     def test_creates_symbol_with_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
