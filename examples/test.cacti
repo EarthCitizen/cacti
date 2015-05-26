@@ -1,4 +1,6 @@
-
+val x = 400
+print(x)
+print(x * 10)
 print("Wow" + "Hmmm")
 print(2 * (4 + 1))
 print("Part 1"); print("Part 2")

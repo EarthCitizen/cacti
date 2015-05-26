@@ -57,7 +57,16 @@ value_operators = [
 
 value_expression <<= infixNotation(value_operand, value_operators)
 
-statement = value_expression + statement_end
+value_expression_statement = value_expression + statement_end
+
+val_statement = Suppress(keyword_val) + ident + assignment_operator + value_expression + statement_end
+def val_statement_action(s, loc, toks):
+    #print("TOKS: " + str(toks))
+    #return None
+    return ast.ValDeclarationStatement(toks[0], toks[1])
+val_statement.setParseAction(val_statement_action)
+
+statement = value_expression_statement ^ val_statement
 def statement_action(s, loc, tok):
     return tok[0]
 statement.setParseAction(statement_action)

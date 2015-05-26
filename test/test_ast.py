@@ -72,13 +72,6 @@ class TestVarDeclarationStatement:
         call_env.symbol_stack['x'] = make_integer(99)
         assert call_env.symbol_stack['x'].primitive == 99
         
-    #def test_value_nothing_with_no_init_expr(self):
-    ##    var_stmt = VarDeclarationStatement('x')
-    #    var_stmt()
-    #    call_env = peek_call_env()
-    #    assert call_env.symbol_stack['x'] is get_builtin('nothing')
-        
-
 class ShowCalledExpression:
         def __init__(self):
             self.called = False
