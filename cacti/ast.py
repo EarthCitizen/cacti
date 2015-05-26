@@ -60,6 +60,9 @@ class ValDeclarationStatement(Evaluable):
         table = call_env.symbol_stack.peek()
         table.add_symbol(self.__symbol, ConstantValueHolder(value))
         return value
+        
+    def __repr__(self):
+        return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__init_expr))
 
 class VarDeclarationStatement(Evaluable):
     def __init__(self, symbol, init_expr):
@@ -72,6 +75,9 @@ class VarDeclarationStatement(Evaluable):
         table = call_env.symbol_stack.peek()
         table.add_symbol(self.__symbol, ValueHolder(value))
         return value
+        
+    def __repr__(self):
+        return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__init_expr))
 
 class Block(Evaluable):
     def __init__(self, *exprs):
@@ -80,3 +86,6 @@ class Block(Evaluable):
     def eval(self):
         for e in self.__exprs:
             e()
+            
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, repr(self.__exprs))

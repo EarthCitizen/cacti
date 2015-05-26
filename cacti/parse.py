@@ -1,19 +1,20 @@
 from pyparsing import *
+from functools import reduce
 import cacti.runtime as rntm
 import cacti.builtin as bltn
 import cacti.ast as ast
 
 __all__ = ['parse_file', 'parse_string']
 
-keyword_var = Keyword('var')
-keyword_val = Keyword('val')
+keyword_var = Keyword('var').suppress()
+keyword_val = Keyword('val').suppress()
 
 ident_word = lambda: Word('_' + alphas, bodyChars='_' + alphanums)
 
-open_paren = Suppress(Literal("("))
-close_paren = Suppress(Literal(")"))
-assignment_operator = Suppress(Literal("="))
-statement_end = Suppress(Literal(";") ^ LineEnd()) # ^ StringEnd())
+open_paren = Literal("(").suppress()
+close_paren = Literal(")").suppress()
+assignment_operator = Literal("=").suppress()
+statement_end = (Literal(";") ^ LineEnd() ^ StringEnd()).suppress()
 
 value_expression = Forward()
 
@@ -46,7 +47,10 @@ value_operand = Forward()
 value_operand <<= (value_literal ^ value_reference ^ value_reference_call)
 
 def value_operators_action(s, loc, toks):
-    return ast.OperationExpression(toks[0][0], toks[0][1], toks[0][2])
+    operation = toks[0][1]
+    operands = toks[0][0::2]
+    expr = reduce(lambda o1, o2: ast.OperationExpression(o1, operation, o2), operands)
+    return expr
 
 value_operators = [
     ("*", 2, opAssoc.LEFT, value_operators_action),
@@ -59,19 +63,38 @@ value_expression <<= infixNotation(value_operand, value_operators)
 
 value_expression_statement = value_expression + statement_end
 
-val_statement = Suppress(keyword_val) + ident + assignment_operator + value_expression + statement_end
+### VAL
+
+val_statement = keyword_val + ident + assignment_operator + value_expression + statement_end
 def val_statement_action(s, loc, toks):
-    #print("TOKS: " + str(toks))
-    #return None
     return ast.ValDeclarationStatement(toks[0], toks[1])
 val_statement.setParseAction(val_statement_action)
 
-statement = value_expression_statement ^ val_statement
+### VAR
+
+def var_statement_action(s, loc, toks):
+    symbol = toks[0]
+    if len(toks) == 2:
+        return ast.VarDeclarationStatement(symbol, toks[1])
+    else:
+        return ast.VarDeclarationStatement(symbol, ast.ReferenceExpression('nothing'))
+
+var_statement_dec = keyword_var + ident + assignment_operator + value_expression + statement_end
+var_statement_dec.setParseAction(var_statement_action)
+
+var_statement_dec_asgn = keyword_var + ident + statement_end
+var_statement_dec_asgn.setParseAction(var_statement_action)
+
+### STATEMENT
+
+statement = value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn
 def statement_action(s, loc, tok):
     return tok[0]
 statement.setParseAction(statement_action)
 
-block = OneOrMore(statement)
+### BLOCK
+
+block = ZeroOrMore(statement)
 def block_action(s, loc, tok):
     return ast.Block(*tok)
 block.setParseAction(block_action)
