@@ -10,12 +10,9 @@ class ObjectDefinition:
         self.__typeobj = typeobj
         self.__name = name
         self.__selfobj = self
-        self.__superobj = superobj
+        self.set_superobj(superobj)
         
         self.__internal_table = SymbolTable()
-        
-        if self.__superobj:
-            self.__superobj.set_selfobj(self)
         
         self.__field_table = SymbolTable()
         
@@ -37,6 +34,11 @@ class ObjectDefinition:
         
     def set_selfobj(self, selfobj):
         self.__selfobj = selfobj
+        
+    def set_superobj(self, superobj):
+        self.__superobj = superobj
+        if self.__superobj:
+            self.__superobj.set_selfobj(self)
     
     @property
     def public_table(self):

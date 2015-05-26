@@ -12,7 +12,11 @@ __all__ = [
            'ClosureBinding', 'FunctionBinding', 'MethodBinding'
            ]
 
-class Callable:
+class _Call:
+    def __call__(self, *params):
+        return self.call(*params)
+    
+class Callable(_Call):
     def __init__(self, content, *params):
         self.__params = params
         self.__content = content
@@ -45,7 +49,7 @@ class Callable:
         symbol_stack.pop()
         return return_value
         
-class ClosureBinding:
+class ClosureBinding(_Call):
     def __init__(self, call_env, kallable):
         self.__call_env = call_env
         self.__callable = kallable
@@ -56,7 +60,7 @@ class ClosureBinding:
         pop_call_env()
         return return_value   
 
-class FunctionBinding:
+class FunctionBinding(_Call):
     def __init__(self, owner, name, kallable):
         self.__owner = owner
         self.__name = name
@@ -68,17 +72,17 @@ class FunctionBinding:
         pop_call_env()
         return return_value
         
-class MethodBinding:
+class MethodBinding(_Call):
     def __init__(self, owner, method_def):
         self.__owner = owner
         self.__method_def = method_def
         
     def call(self, *params):
-        push_call_env(CallEnv(self.__owner, self.__method_def.name))
-        super_self = SymbolTable()
+        call_env = CallEnv(self.__owner, self.__method_def.name)
+        push_call_env(call_env)
+        super_self = call_env.symbol_stack.peek()
         super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
         super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
-        peek_call_env().symbol_stack.push(super_self)
         return_value = self.__method_def.callable.call(*params)
         pop_call_env()
         return return_value
@@ -100,6 +104,7 @@ class CallEnv:
         self.__owner = owner
         self.__name = name
         self.__symbol_stack = SymbolTableStack()
+        self.__symbol_stack.push(SymbolTable())
     
     @property
     def owner(self):
