@@ -1,0 +1,8 @@
+
+print("Wow" + "Hmmm")
+print(2 * (4 + 1))
+print("Part 1"); print("Part 2")
+
+
+
+print(nothing)
