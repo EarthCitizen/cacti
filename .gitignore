@@ -3,3 +3,7 @@
 .DS_Store
 __pycache__
 cacti/test.py
+
+cacti/str_issue.py
+
+cacti/try_api.py
