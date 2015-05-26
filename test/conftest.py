@@ -2,6 +2,8 @@ import pytest
 from cacti.runtime import *
 from cacti.builtin import *
 
+initialize_builtins()
+
 @pytest.fixture
 def set_up_env():
         call_env = CallEnv(make_object(), 'test')

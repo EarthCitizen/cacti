@@ -126,16 +126,20 @@ class ObjectDefinition:
         return str(self)
     
     def __str__(self):
-        return self.to_string()
+        return self.to_string().primitive
     
     # This is a workaround to the fact that
     # str() will not call the __str__() that
     # is dynamically added to an object instance
     def to_string(self):
+        from cacti.builtin import make_string
+        
         if (self.name is None) or ('' == self.name):
-            return '{}<{}>'.format(self.typeobj.name, id(self))
+            ret_val = '{}<{}>'.format(self.typeobj.name, id(self))
         else:
-            return "{}<'{}'>".format(self.typeobj.name, self.name)
+            ret_val = "{}<'{}'>".format(self.typeobj.name, self.name)
+        
+        return make_string(ret_val)
 
 class PrimitiveObjectDefinition(ObjectDefinition):
     def __init__(self, superobj, *, typeobj=None, name=''):
@@ -143,6 +147,9 @@ class PrimitiveObjectDefinition(ObjectDefinition):
 
 class Closure(ObjectDefinition):
     def __init__(self, closure_call_env, closure_callable):
+        assert isinstance(closure_call_env, CallEnv)
+        assert isinstance(closure_callable, Callable)
+        
         from cacti.builtin import get_builtin, get_type
         binding = ClosureBinding(closure_call_env, closure_callable)
         superobj = get_builtin('Object').hook_table['()'].call()
@@ -151,6 +158,8 @@ class Closure(ObjectDefinition):
         
 class Function(ObjectDefinition):
     def __init__(self, function_name, function_callable):
+        assert isinstance(function_callable, Callable)
+        
         from cacti.builtin import get_builtin, get_type
         binding = FunctionBinding(self, function_name, function_callable)
         superobj = get_builtin('Object').hook_table['()'].call()
@@ -159,6 +168,9 @@ class Function(ObjectDefinition):
         
 class Method(ObjectDefinition):
     def __init__(self, method_owner, method_def):
+        assert isinstance(method_owner, ObjectDefinition)
+        assert isinstance(method_def, MethodDefinition)
+        
         from cacti.builtin import get_builtin, get_type
         binding = MethodBinding(method_owner, method_def)
         superobj = get_builtin('Object').hook_table['()'].call()

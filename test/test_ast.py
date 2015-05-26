@@ -56,3 +56,21 @@ class TestValDeclarationStatement:
         with pytest.raises(ConstantValueError):
             call_env = peek_call_env()
             call_env.symbol_stack['x'] = make_integer(99)
+
+class ShowCalledExpression:
+        def __init__(self):
+            self.called = False
+        
+        def __call__(self):
+            self.called = True
+
+class TestBlock:
+    def test_evals_all_expressions(self):
+        exprs = [ShowCalledExpression(), ShowCalledExpression(), ShowCalledExpression()]
+        block = Block(*exprs)
+        block()
+        evals = list(filter(lambda e: e.called, exprs))
+        assert len(exprs) == len(evals)
+        
+        
+                

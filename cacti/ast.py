@@ -1,6 +1,6 @@
 from cacti.runtime import *
 
-__all__ = [ 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'ValDeclarationStatement' ]
+__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'ValDeclarationStatement' ]
 
 class Evaluable:
     def __call__(self):
@@ -18,7 +18,6 @@ class OperationExpression(Evaluable):
     def eval(self):
         target = self.__operand_expr()
         params = list(map(lambda e: e(), self.__operation_expr_params))
-        print(params)
         return target.hook_table[self.__operation].call(*params)
     
     def __repr__(self):
@@ -59,3 +58,11 @@ class ValDeclarationStatement(Evaluable):
         table = call_env.symbol_stack.peek()
         table.add_symbol(self.__symbol, ConstantValueHolder(value))
         return value
+    
+class Block(Evaluable):
+    def __init__(self, *exprs):
+        self.__exprs = exprs
+
+    def eval(self):
+        for e in self.__exprs:
+            e()

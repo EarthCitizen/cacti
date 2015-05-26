@@ -40,6 +40,7 @@ class Callable(_Call):
         return param_table
     
     def call(self, *param_values):
+        from cacti.builtin import get_builtin
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
         call_env = peek_call_env()
@@ -47,6 +48,8 @@ class Callable(_Call):
         symbol_stack.push(param_table)
         return_value = self.__content()
         symbol_stack.pop()
+        if return_value is None:
+            return_value = get_builtin('nothing')
         return return_value
         
 class ClosureBinding(_Call):
@@ -101,9 +104,11 @@ def pop_call_env():
 
 class CallEnv:
     def __init__(self, owner, name):
+        from cacti.builtin import get_builtin_table
         self.__owner = owner
         self.__name = name
         self.__symbol_stack = SymbolTableStack()
+        self.__symbol_stack.push(get_builtin_table())
         self.__symbol_stack.push(SymbolTable())
     
     @property

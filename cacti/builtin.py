@@ -4,7 +4,7 @@ from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
 
-__all__ = ['get_type', 'get_builtin', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string']
+__all__ = ['get_type', 'get_builtin', 'get_builtin_table', 'initialize_builtins', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string']
 
 def make_object():
     obj = get_builtin('Object').hook_table['()'].call()
@@ -185,6 +185,9 @@ def add_builtin(symbol_name, object_instance):
 def get_builtin(symbol_name):
     return _BUILTINS[symbol_name]
 
+def get_builtin_table():
+    return _BUILTINS
+
 def _bootstrap_basic_types():
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
     __object_classdef_superobj = ObjectDefinition(None)
@@ -212,12 +215,6 @@ def _make_type(type_name):
     typedef = TypeDefinition(superobj, type_name)
     typedef.set_typeobj(get_type('Type'))
     add_type(typedef.name, typedef)
-
-_bootstrap_basic_types()
-_make_type('Function')
-_make_type('Closure')
-_make_type('Method')
-
 
 _PRIMITIVE_OPERATION_FUNCTIONS = {
         '*': operator.mul,
@@ -250,7 +247,7 @@ _PRIMITIVE_OPERATION_METHOD_DEFS = {
     }
 
 def _make_string_class():
-    superobj = get_builtin('Object').hook_table['()'].call()
+    superobj = make_object()
     typeobj = get_type('Class')
     superclass = get_builtin('Object')
     classdef = ClassDefinition(superobj, 'String', typeobj=typeobj, superclass=superclass)
@@ -258,7 +255,7 @@ def _make_string_class():
     def new_callable_content():
         obj = _hook_new_callable_content()
         obj.primitive = ''
-        obj.to_string = types.MethodType(lambda self: self.primitive, obj)
+        obj.to_string = types.MethodType(lambda self: self, obj)
         return obj
         
     classdef.add_hook(MethodDefinition('()', Callable(new_callable_content)))
@@ -272,7 +269,7 @@ def _make_string_class():
     add_builtin(classdef.name, classdef)
 
 def _make_numeric_class(class_name, converter):
-    superobj = make_object() #get_builtin('Object').hook_table['()'].call()
+    superobj = make_object()
     typeobj = get_type('Class')
     superclass = get_builtin('Object')
     classdef = ClassDefinition(superobj, class_name, typeobj=typeobj, superclass=superclass)
@@ -280,7 +277,7 @@ def _make_numeric_class(class_name, converter):
     def new_callable_content():
         obj = _hook_new_callable_content()
         obj.primitive = 0
-        obj.to_string = types.MethodType(lambda self: str(self.primitive), obj)
+        obj.to_string = types.MethodType(lambda self: make_string(str(self.primitive)), obj)
         return obj
         
     classdef.add_hook(MethodDefinition('()', Callable(new_callable_content)))
@@ -293,8 +290,33 @@ def _make_numeric_class(class_name, converter):
     classdef.add_property_definition(string_prop_def)
     
     add_builtin(classdef.name, classdef)
+    
+def _make_nothing():
+    typedef_superobj = make_object()
+    nothing_typedef = TypeDefinition(typedef_superobj, 'Nothing')
+    nothing_typedef.set_typeobj(get_type('Type'))
+    nothing_superobj = make_object()
+    nothing = ObjectDefinition(nothing_superobj, name='nothing')
+    nothing.set_typeobj(nothing_typedef)
+    add_builtin(nothing.name, nothing)
 
-_make_string_class()
-_make_numeric_class('Integer', int)
-_make_numeric_class('Float', float)
+def _make_function_print():
+    def fn_print():
+        value = str(peek_call_env().symbol_stack['value'])
+        print(value)
+    
+    fn_callable = Callable(fn_print, 'value')
+        
+    fn = Function('print', fn_callable)
+    add_builtin(fn.name, fn)
 
+def initialize_builtins():
+    _bootstrap_basic_types()
+    _make_type('Function')
+    _make_type('Closure')
+    _make_type('Method')
+    _make_string_class()
+    _make_nothing()
+    _make_function_print()
+    _make_numeric_class('Integer', int)
+    _make_numeric_class('Float', float)
