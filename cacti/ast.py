@@ -1,6 +1,7 @@
 from cacti.runtime import *
+from cacti.builtin import ObjectDefinition
 
-__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'ValDeclarationStatement' ]
+__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'ValDeclarationStatement', 'VarDeclarationStatement' ]
 
 class Evaluable:
     def __call__(self):
@@ -39,6 +40,7 @@ class ReferenceExpression(Evaluable):
     
 class ValueExpression(Evaluable):
     def __init__(self, value):
+        assert isinstance(value, ObjectDefinition)
         self.__value = value
         
     def eval(self):
@@ -58,7 +60,19 @@ class ValDeclarationStatement(Evaluable):
         table = call_env.symbol_stack.peek()
         table.add_symbol(self.__symbol, ConstantValueHolder(value))
         return value
-    
+
+class VarDeclarationStatement(Evaluable):
+    def __init__(self, symbol, init_expr):
+        self.__symbol = symbol
+        self.__init_expr = init_expr
+        
+    def eval(self):
+        value = self.__init_expr()
+        call_env = peek_call_env()
+        table = call_env.symbol_stack.peek()
+        table.add_symbol(self.__symbol, ValueHolder(value))
+        return value
+
 class Block(Evaluable):
     def __init__(self, *exprs):
         self.__exprs = exprs

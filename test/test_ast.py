@@ -13,7 +13,7 @@ class TestOperationExpression:
             symbol_stack = call_env.symbol_stack
             x = symbol_stack['x']
             y = symbol_stack['y']
-            return x * y
+            return x.hook_table['*'](y)
         function_callable = Callable(function_content, 'x', 'y')
         function = Function('foo', function_callable)
         main_object = get_builtin('Object').hook_table['()'].call()
@@ -23,8 +23,8 @@ class TestOperationExpression:
         main_table.add_symbol(function.name, ConstantValueHolder(function))
         main_stack.push(main_table)
         push_call_env(main_env)
-        expr = OperationExpression(ReferenceExpression('foo'), '()', ValueExpression(10), ValueExpression(2))
-        assert 20 == expr()
+        expr = OperationExpression(ReferenceExpression('foo'), '()', ValueExpression(make_integer(10)), ValueExpression(make_integer(2)))
+        assert 20 == expr().primitive
 
 class TestReferenceExpression:
     def test_returns_dereferenced_value(self):
@@ -38,7 +38,7 @@ class TestReferenceExpression:
 
 class TestValueExpression:
     def test_returns_value(self):
-        obj = object()
+        obj = make_object()
         expr = ValueExpression(obj)
         assert obj is expr()
 
@@ -48,14 +48,36 @@ class TestValDeclarationStatement:
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
         call_env = peek_call_env()
-        assert call_env.symbol_stack['x'].primitive == make_integer(5).primitive
+        assert call_env.symbol_stack['x'].primitive == 5
     
-    def test_creates_constant(self):
+    def test_creates_constant_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
         with pytest.raises(ConstantValueError):
             call_env = peek_call_env()
             call_env.symbol_stack['x'] = make_integer(99)
+
+@pytest.mark.usefixtures('set_up_env')
+class TestVarDeclarationStatement:
+    def test_creates_symbol_with_value(self):
+        var_stmt = VarDeclarationStatement('x', ValueExpression(make_integer(5)))
+        var_stmt()
+        call_env = peek_call_env()
+        assert call_env.symbol_stack['x'].primitive == 5
+        
+    def test_creates_changeable_value(self):
+        var_stmt = VarDeclarationStatement('x', ValueExpression(make_integer(5)))
+        var_stmt()
+        call_env = peek_call_env()
+        call_env.symbol_stack['x'] = make_integer(99)
+        assert call_env.symbol_stack['x'].primitive == 99
+        
+    #def test_value_nothing_with_no_init_expr(self):
+    ##    var_stmt = VarDeclarationStatement('x')
+    #    var_stmt()
+    #    call_env = peek_call_env()
+    #    assert call_env.symbol_stack['x'] is get_builtin('nothing')
+        
 
 class ShowCalledExpression:
         def __init__(self):
