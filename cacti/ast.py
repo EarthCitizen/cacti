@@ -1,7 +1,7 @@
 from cacti.runtime import *
-from cacti.builtin import ObjectDefinition
+from cacti.builtin import Function, ObjectDefinition
 
-__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'AssignmentStatement', 'ValDeclarationStatement', 'VarDeclarationStatement' ]
+__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'AssignmentStatement', 'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement' ]
 
 class Evaluable:
     def __call__(self):
@@ -62,6 +62,24 @@ class AssignmentStatement(Evaluable):
         
     def __repr__(self):
         return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__expr))
+
+class FunctionDeclarationStatement(Evaluable):
+    def __init__(self, name, expr, *params):
+        self.__name = name
+        self.__expr = expr
+        self.__params = params
+        
+    def eval(self):
+        kallable = Callable(self.__expr, *self.__params)
+        function = Function(self.__name, kallable)
+        call_env = peek_call_env()
+        table = call_env.symbol_stack.peek()
+        table.add_symbol(self.__name, ConstantValueHolder(function))
+        
+        return function
+        
+    def __repr__(self):
+        return "{}('{}', {}, {})".format(self.__class__.__name__, self.__name, repr(self.__expr), repr(self.__params))
 
 class ValDeclarationStatement(Evaluable):
     def __init__(self, symbol, init_expr):

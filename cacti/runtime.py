@@ -26,7 +26,7 @@ class Callable(_Call):
             call_env = peek_call_env()
             kwargs = {
                 'caller': str(call_env.owner),
-                'method_name': call_env.name,
+                'name': call_env.name,
                 'exp': len(self.__params),
                 'got': len(param_values)
                 }

@@ -6,17 +6,25 @@ import cacti.ast as ast
 
 __all__ = ['parse_file', 'parse_string']
 
+
+block = Forward()
+statement = Forward()
+value_expression = Forward()
+function_statement = Forward()
+value_operand = Forward()
+
+keyword_function = Keyword('function').suppress()
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
 
 ident_word = lambda: Word('_' + alphas, bodyChars='_' + alphanums)
 
+open_curl = Literal("{").suppress()
+close_curl = Literal("}").suppress()
 open_paren = Literal("(").suppress()
 close_paren = Literal(")").suppress()
 assignment_operator = Literal("=").suppress()
 statement_end = (Literal(";") ^ LineEnd() ^ StringEnd()).suppress()
-
-value_expression = Forward()
 
 ident = ident_word()
 
@@ -43,8 +51,7 @@ def value_reference_call_action(s, loc, toks):
     return ast.OperationExpression(toks[0], '()', *toks[1])
 value_reference_call.setParseAction(value_reference_call_action)
 
-value_operand = Forward()
-value_operand <<= (value_literal ^ value_reference ^ value_reference_call)
+value_operand <<= (value_literal ^ value_reference ^ value_reference_call ^ function_statement)
 
 def value_operators_action(s, loc, toks):
     operation = toks[0][1]
@@ -92,16 +99,27 @@ def assignment_statement_action(s, loc, toks):
     return ast.AssignmentStatement(toks[0], toks[1])
 assignment_statement.setParseAction(assignment_statement_action)
 
+
 ### STATEMENT
 
-statement = value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn ^ assignment_statement
+statement <<= value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn ^ assignment_statement ^ function_statement
 def statement_action(s, loc, tok):
     return tok[0]
 statement.setParseAction(statement_action)
 
+
+### FUNCTION
+
+function_statement <<= keyword_function + Optional(ident) + open_paren + Group(Optional(delimitedList(ident))) + close_paren + open_curl + block + close_curl + statement_end
+def function_statement_action(s, loc, toks):
+    print("TOKS: " + str(toks))
+    print(*toks[1])
+    return ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1])
+function_statement.setParseAction(function_statement_action)
+
 ### BLOCK
 
-block = ZeroOrMore(statement)
+block <<= ZeroOrMore(statement)
 def block_action(s, loc, tok):
     return ast.Block(*tok)
 block.setParseAction(block_action)
