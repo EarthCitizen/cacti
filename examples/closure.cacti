@@ -1,0 +1,7 @@
+val SOMETHING = 123
+
+val cl = closure () {
+    print(SOMETHING)
+}
+
+cl()

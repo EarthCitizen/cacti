@@ -1,7 +1,7 @@
 from cacti.runtime import *
-from cacti.builtin import Function, ObjectDefinition
+from cacti.builtin import Closure, Function, ObjectDefinition
 
-__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'AssignmentStatement', 'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement' ]
+__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'AssignmentStatement', 'ClosureDeclarationStatement', 'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement' ]
 
 class Evaluable:
     def __call__(self):
@@ -63,6 +63,23 @@ class AssignmentStatement(Evaluable):
     def __repr__(self):
         return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__expr))
 
+#Closure(ObjectDefinition):
+#    def __init__(self, closure_call_env, closure_callable):
+
+class ClosureDeclarationStatement(Evaluable):
+    def __init__(self, expr, *params):
+        self.__expr = expr
+        self.__params = params
+        
+    def eval(self):
+        kallable = Callable(self.__expr, *self.__params)
+        call_env = peek_call_env()
+        closure = Closure(call_env, kallable)
+        return closure
+        
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__expr), repr(self.__params))
+
 class FunctionDeclarationStatement(Evaluable):
     def __init__(self, name, expr, *params):
         self.__name = name
@@ -73,13 +90,14 @@ class FunctionDeclarationStatement(Evaluable):
         kallable = Callable(self.__expr, *self.__params)
         function = Function(self.__name, kallable)
         call_env = peek_call_env()
-        table = call_env.symbol_stack.peek()
-        table.add_symbol(self.__name, ConstantValueHolder(function))
+        if self.__name:
+            table = call_env.symbol_stack.peek()
+            table.add_symbol(self.__name, ConstantValueHolder(function))
         
         return function
         
     def __repr__(self):
-        return "{}('{}', {}, {})".format(self.__class__.__name__, self.__name, repr(self.__expr), repr(self.__params))
+        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__expr), repr(self.__params))
 
 class ValDeclarationStatement(Evaluable):
     def __init__(self, symbol, init_expr):
@@ -94,7 +112,7 @@ class ValDeclarationStatement(Evaluable):
         return value
         
     def __repr__(self):
-        return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__init_expr))
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__symbol), repr(self.__init_expr))
 
 class VarDeclarationStatement(Evaluable):
     def __init__(self, symbol, init_expr):

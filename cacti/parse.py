@@ -1,3 +1,4 @@
+import logging
 from pyparsing import *
 from functools import reduce
 import cacti.runtime as rntm
@@ -10,9 +11,11 @@ __all__ = ['parse_file', 'parse_string']
 block = Forward()
 statement = Forward()
 value_expression = Forward()
-function_statement = Forward()
+closure = Forward()
+function = Forward()
 value_operand = Forward()
 
+keyword_closure = Keyword('closure').suppress()
 keyword_function = Keyword('function').suppress()
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
@@ -24,7 +27,7 @@ close_curl = Literal("}").suppress()
 open_paren = Literal("(").suppress()
 close_paren = Literal(")").suppress()
 assignment_operator = Literal("=").suppress()
-statement_end = (Literal(";") ^ LineEnd() ^ StringEnd()).suppress()
+statement_end = (Literal(";").suppress() | LineEnd().suppress() | StringEnd().suppress() | FollowedBy(Literal('}'))) #(Literal(";") ^ LineEnd() ^ StringEnd()).suppress()
 
 ident = ident_word()
 
@@ -51,7 +54,7 @@ def value_reference_call_action(s, loc, toks):
     return ast.OperationExpression(toks[0], '()', *toks[1])
 value_reference_call.setParseAction(value_reference_call_action)
 
-value_operand <<= (value_literal ^ value_reference ^ value_reference_call ^ function_statement)
+value_operand <<= (value_literal ^ value_reference ^ value_reference_call)
 
 def value_operators_action(s, loc, toks):
     operation = toks[0][1]
@@ -66,7 +69,7 @@ value_operators = [
     ("-", 2, opAssoc.LEFT, value_operators_action)
 ]
 
-value_expression <<= infixNotation(value_operand, value_operators)
+value_expression <<= (infixNotation(value_operand, value_operators) ^ function ^ closure)
 
 value_expression_statement = value_expression + statement_end
 
@@ -99,6 +102,23 @@ def assignment_statement_action(s, loc, toks):
     return ast.AssignmentStatement(toks[0], toks[1])
 assignment_statement.setParseAction(assignment_statement_action)
 
+### CLOSURE
+
+closure <<= keyword_closure + open_paren + Group(Optional(delimitedList(ident))) + close_paren + open_curl + block + close_curl
+def closure_action(s, loc, toks):
+    logging.debug(s)
+    logging.debug(str(toks))
+    return ast.ClosureDeclarationStatement(toks[1], *toks[0])
+closure.setParseAction(closure_action)
+closure_statement = closure + statement_end
+
+### FUNCTION
+
+function <<= keyword_function + Optional(ident, default=None) + open_paren + Group(Optional(delimitedList(ident))) + close_paren + open_curl + block + close_curl
+def function_action(s, loc, toks):
+    return ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1])
+function.setParseAction(function_action)
+function_statement = function + statement_end
 
 ### STATEMENT
 
@@ -106,16 +126,6 @@ statement <<= value_expression_statement ^ val_statement ^ var_statement_dec ^ v
 def statement_action(s, loc, tok):
     return tok[0]
 statement.setParseAction(statement_action)
-
-
-### FUNCTION
-
-function_statement <<= keyword_function + Optional(ident) + open_paren + Group(Optional(delimitedList(ident))) + close_paren + open_curl + block + close_curl + statement_end
-def function_statement_action(s, loc, toks):
-    print("TOKS: " + str(toks))
-    print(*toks[1])
-    return ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1])
-function_statement.setParseAction(function_statement_action)
 
 ### BLOCK
 

@@ -1,10 +1,13 @@
-val x = 400
-print(x)
-print(x * 10)
-print("Wow" + "Hmmm")
-print(2 * (4 + 1))
-print("Part 1"); print("Part 2")
+val x = function (d) {
+    var x = 15
+    function inner() {
+        function inner() { print("Inner Inner") }
+        print("This is inner")
+        inner()
+    }
+    print(d + x)
+    inner()
+}
+x(10)
 
-
-
-print(nothing)
+var d = 3
