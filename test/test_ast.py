@@ -43,6 +43,16 @@ class TestValueExpression:
         assert obj is expr()
 
 @pytest.mark.usefixtures('set_up_env')
+class TestAssignmentStatement:
+    def test_assigns_value(self):
+        table = peek_call_env().symbol_stack.peek()
+        table.add_symbol('x', ValueHolder(make_integer(5)))
+        stmt = AssignmentStatement('x', ValueExpression(make_integer(10)))
+        stmt()
+        x = peek_call_env().symbol_stack['x']
+        assert x.primitive == 10
+
+@pytest.mark.usefixtures('set_up_env')
 class TestValDeclarationStatement:
     def test_creates_symbol_with_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
