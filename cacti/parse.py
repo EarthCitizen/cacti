@@ -85,9 +85,16 @@ var_statement_dec.setParseAction(var_statement_action)
 var_statement_dec_asgn = keyword_var + ident + statement_end
 var_statement_dec_asgn.setParseAction(var_statement_action)
 
+### ASSIGNMENT
+
+assignment_statement = ident + assignment_operator + value_expression + statement_end
+def assignment_statement_action(s, loc, toks):
+    return ast.AssignmentStatement(toks[0], toks[1])
+assignment_statement.setParseAction(assignment_statement_action)
+
 ### STATEMENT
 
-statement = value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn
+statement = value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn ^ assignment_statement
 def statement_action(s, loc, tok):
     return tok[0]
 statement.setParseAction(statement_action)
