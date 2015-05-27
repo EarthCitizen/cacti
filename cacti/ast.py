@@ -59,6 +59,9 @@ class AssignmentStatement(Evaluable):
         table = peek_call_env().symbol_stack.peek()
         table[self.__symbol] = value
         return value
+        
+    def __repr__(self):
+        return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__expr))
 
 class ValDeclarationStatement(Evaluable):
     def __init__(self, symbol, init_expr):
