@@ -54,7 +54,12 @@ def value_reference_call_action(s, loc, toks):
     return ast.OperationExpression(toks[0], '()', *toks[1])
 value_reference_call.setParseAction(value_reference_call_action)
 
-value_operand <<= (value_literal ^ value_reference ^ value_reference_call)
+value_properties_of = (value_literal ^ value_reference ^ value_reference_call) + Group(OneOrMore(Literal('.').suppress() + ident))
+def value_properties_of_action(s, loc, toks):
+    return ast.PropertyExpression(toks[0], *toks[1])
+value_properties_of.setParseAction(value_properties_of_action)
+
+value_operand <<= (value_literal ^ value_reference ^ value_reference_call ^ value_properties_of)
 
 def value_operators_action(s, loc, toks):
     operation = toks[0][1]

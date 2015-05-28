@@ -1,0 +1,6 @@
+
+print("Foo".type.name)
+print("Foo".id)
+print("Foo".id.type.name)
+print("Foo".id.type)
+print(String().type)

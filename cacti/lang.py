@@ -179,8 +179,9 @@ class Method(ObjectDefinition):
         
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
+        from cacti.builtin import make_string
         super().__init__(superobj, typeobj=typeobj, name=name)
-        gc = Callable(lambda: peek_call_env().symbol_stack['self'].name)
+        gc = Callable(lambda: make_string(peek_call_env().symbol_stack['self'].name))
         self.add_property(PropertyDefinition('name',getter_callable=gc))
     
     def __str__(self):

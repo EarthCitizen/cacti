@@ -25,6 +25,14 @@ class TestOperationExpression:
         push_call_env(main_env)
         expr = OperationExpression(ReferenceExpression('foo'), '()', ValueExpression(make_integer(10)), ValueExpression(make_integer(2)))
         assert 20 == expr().primitive
+        
+class TestPropertyExpression:
+    def test_resolves_multiple_properties(self):
+        prop_list = ['id', 'type', 'name']
+        obj = make_string('test')
+        prop_expr = PropertyExpression(ValueExpression(obj), *prop_list)
+        assert prop_expr().primitive == 'Integer'
+        
 
 class TestReferenceExpression:
     def test_returns_dereferenced_value(self):

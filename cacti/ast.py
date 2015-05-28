@@ -1,7 +1,10 @@
 from cacti.runtime import *
 from cacti.builtin import Closure, Function, ObjectDefinition
 
-__all__ = [ 'Block', 'OperationExpression', 'ReferenceExpression', 'ValueExpression', 'AssignmentStatement', 'ClosureDeclarationStatement', 'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement' ]
+__all__ = [
+    'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
+    'AssignmentStatement', 'ClosureDeclarationStatement', 'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement'
+    ]
 
 class Evaluable:
     def __call__(self):
@@ -27,6 +30,25 @@ class OperationExpression(Evaluable):
                     repr(self.__operand_expr),
                     self.__operation,
                     repr(self.__operation_expr_params))
+                    
+class PropertyExpression(Evaluable):
+    def __init__(self, obj_expr, *prop_names):
+        assert 0 == len(list(filter(lambda e: not isinstance(e, str), prop_names)))
+        self.__obj_expr = obj_expr
+        self.__prop_names = prop_names
+    
+    def eval(self):
+        value = self.__obj_expr()
+        for p in self.__prop_names:
+            value = value[p]
+            
+        return value
+        
+    def __repr__(self):
+        return "{}({}, {})".format(
+                    self.__class__.__name__,
+                    repr(self.__obj_expr),
+                    repr(self.__prop_names))
         
 class ReferenceExpression(Evaluable):
     def __init__(self, symbol):
