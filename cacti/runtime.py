@@ -1,5 +1,6 @@
 import re
 import collections
+import copy
 from cacti.exceptions import *
 
 __all__ = [
@@ -7,7 +8,8 @@ __all__ = [
            'isvalidhook', 'isvalidsymbol', 'peek_call_env', 'pop_call_env', 'push_call_env',
            
            # Classes
-           'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
+           'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
+           'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
            
            'ClosureBinding', 'FunctionBinding', 'MethodBinding'
            ]
@@ -54,7 +56,7 @@ class Callable(_Call):
         
 class ClosureBinding(_Call):
     def __init__(self, call_env, kallable):
-        self.__call_env = call_env
+        self.__call_env = copy.copy(call_env)
         self.__callable = kallable
         
     def call(self, *params):
@@ -122,12 +124,16 @@ class CallEnv:
     @property
     def name(self):
         return self.__name
+    
+    def __copy__(self):
+        inst_copy = self.__class__(self.__owner, self.__name)
+        inst_copy.__symbol_stack = copy.copy(self.__symbol_stack)
+        return inst_copy
         
     def __repr__(self):
         return str(self)
         
     def __str__(self):
-        #return self.__class__.__name__ + "<" + self.__name + ">" + "(" + str(self.__symbol_stack) + ")"
         return "{} {}({})<{}>({})".format(
             self.__class__.__name__,
             self.__owner.__class__.__name__,
@@ -144,6 +150,9 @@ class ValueHolder:
     
     def set_value(self, value):
         self.__value = value
+        
+    def __copy__(self):
+        return self.__class__(self.__value)
         
     def __repr__(self):
         return str(self)
@@ -170,6 +179,9 @@ class PropertyGetSetValueHolder(ValueHolder):
     
     def set_value(self, value):
         self.__set.call(value)
+        
+    def __copy__(self):
+        return self
     
     value = property(get_value, set_value)
 
@@ -179,6 +191,9 @@ class PropertyGetValueHolder(ConstantValueHolder):
     
     def get_value(self):
         return self.__get.call()
+    
+    def __copy__(self):
+        return self
     
     value = property(get_value,ConstantValueHolder.set_value)
 
@@ -227,6 +242,13 @@ class SymbolTable:
     def __check_content(self, symbol_content):
         if not isinstance(symbol_content, ValueHolder):
             raise SymbolContentError("Symbol content must be a 'ValueHolder'")
+        
+    def __copy__(self):
+        parent_copy = copy.copy(self.__parent_table)
+        return SymbolTable(
+                    from_dict={symbol: copy.copy(content) for symbol, content in self.__table.items()},
+                    parent_table=parent_copy,
+                    symbol_validator=self.__symbol_validator)
         
     def __contains__(self, key):
         if key in self.__table.keys():
@@ -312,6 +334,12 @@ class SymbolTableStack:
         
     def pop(self):
         return self.__stack.popleft()
+    
+    def __copy__(self):
+        stack_copy = copy.deepcopy(self.__stack)
+        inst_copy =  self.__class__()
+        inst_copy.__stack = stack_copy
+        return inst_copy
         
     def __contains__(self, symbol_name):
         for table in self.__stack:

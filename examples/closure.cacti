@@ -1,7 +1,17 @@
 val SOMETHING = 123
 
-val cl = closure () {
+var cl = closure () {
     print(SOMETHING)
+}
+
+cl = closure () {
+	cl()
+	print("Another closure")
+}
+
+cl = closure() {
+	cl()
+	print("The 3rd closure")
 }
 
 cl()

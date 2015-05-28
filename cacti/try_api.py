@@ -2,38 +2,44 @@ from cacti.runtime import *
 from cacti.lang import *
 from cacti.builtin import *
 
-__user_object = get_builtin('Object').hook_table['()'].call()
+from copy import copy
 
-push_call_env(CallEnv(object(), 'main'))
+initialize_builtins()
 
-print(__user_object.hook_table['.'].call('string'))
+sp = SymbolTable()
+sp.add_symbol('y', ValueHolder(make_string('first y')))
+st = SymbolTable()
+st.add_symbol('x', ValueHolder(make_integer(5)))
 
-method_callable = Callable(lambda: 4 + 9)
-method = Method(__user_object, 'foo', method_callable)
-print(method)
-print(method.hook_table['()'].call())
+ss = SymbolTableStack()
+ss.push(sp)
+ss.push(st)
+ 
+#print(ss)
 
-function_callable = Callable(lambda: 4 + 9)
-function = Function('foo', function_callable)
-print(function)
-print(function.hook_table['()'].call())
+ssc = copy(ss)
+ 
+#print(ssc)
 
-closure_env = CallEnv(object(), 'something')
-closure_env_symbols = SymbolTable()
-closure_env_symbols.add_symbol('x', ConstantValueHolder(10))
-closure_env_symbols.add_symbol('y', ConstantValueHolder(2))
-closure_env.symbol_stack.push(closure_env_symbols)
-def closure_content():
-    call_env = peek_call_env()
-    x = call_env.symbol_stack['x']
-    y = call_env.symbol_stack['y']
-    return x * y
-closure_callable = Callable(closure_content)
-closure = Closure(closure_env, closure_callable)
-print(closure)
-print(closure.hook_table['()'].call())
+sp['y'] = make_string('next y')
+st['x'] = make_integer(6)
+ 
+print(ss)
+print(ssc)
 
-stringobj1 = get_builtin('String').hook_table['()'].call()
-stringobj2 = get_builtin('String').hook_table['()'].call()
-print(stringobj1)
-stringobj1.hook_table['+'].call(5)
+# v = ValueHolder(make_integer(5))
+# 
+# print(v)
+# print(id(v.get_value()))
+# 
+# vc = copy(v)
+# 
+# print(id(vc.get_value()))
+# 
+# print(id(v))
+# print(id(vc))
+
+#v.set_value(6)
+
+#print(v)
+#print(vc)
