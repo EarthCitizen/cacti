@@ -63,9 +63,6 @@ class AssignmentStatement(Evaluable):
     def __repr__(self):
         return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__expr))
 
-#Closure(ObjectDefinition):
-#    def __init__(self, closure_call_env, closure_callable):
-
 class ClosureDeclarationStatement(Evaluable):
     def __init__(self, expr, *params):
         self.__expr = expr
