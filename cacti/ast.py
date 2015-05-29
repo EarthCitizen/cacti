@@ -1,10 +1,11 @@
 from cacti.runtime import *
-from cacti.lang import ClassDefinition, Closure, Function, ObjectDefinition
+from cacti.lang import *
 from cacti.builtin import make_class, make_object
 
 __all__ = [
     'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
-    'AssignmentStatement', 'ClosureDeclarationStatement', 'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement'
+    'AssignmentStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
+    'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement'
     ]
 
 class Evaluable:
@@ -93,12 +94,30 @@ class ClassDeclarationStatement(Evaluable):
         
     def eval(self):
         klass = make_class(self.__name)
+        
+        for p in self.__parts:
+            if isinstance(p, MethodDefinitionDeclarationStatement):
+                klass.add_method_definition(p())
+        
         table = peek_call_env().symbol_stack.peek()
         table.add_symbol(self.__name, ConstantValueHolder(klass))
         return klass
     
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__parts))
+        
+class MethodDefinitionDeclarationStatement(Evaluable):
+    def __init__(self, name, content, *params):
+        self.__name = name
+        self.__content = content
+        self.__params = params
+        
+    def eval(self):
+        method_callable = Callable(self.__content, *self.__params)
+        return MethodDefinition(self.__name, method_callable)
+        
+    def __repr__(self):
+        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__content), repr(self.__params))
 
 class ClosureDeclarationStatement(Evaluable):
     def __init__(self, expr, *params):

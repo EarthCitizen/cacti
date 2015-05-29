@@ -2,8 +2,12 @@ class X {
 	method foo(a, b, c) {
 		a + b + c
 	}
-}; class M {}
+};
 
-var x = M()
-print(x.type)
-print(X().type.type.type.type)
+print(X)
+print(X())
+var x = X()
+print(x.foo)
+var t = x.foo
+print(t(9, 10, 100))
+

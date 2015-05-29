@@ -137,17 +137,18 @@ function_statement = function + statement_end
 
 ### CLASS
 
-method = keyword_method + ident.copy().setName('name') + \
-                open_paren + Group(Optional(delimitedList(ident))).setName('params') + close_paren + \
-                open_curl + block.copy().setName('content') + close_curl
+method = keyword_method + ident + \
+                open_paren + Group(Optional(delimitedList(ident))) + close_paren + \
+                open_curl + block + close_curl
 def method_action(s, loc, toks):
-    method_callable = lang.Callable(toks.content, *toks.params)
-    return lang.MethodDefinition(toks.name, method_callable)
+    return ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1])
 method.setParseAction(method_action)
 
-klass = keyword_class + ident + open_curl + ZeroOrMore(method) + close_curl
+method_statement = method + statement_end
+
+klass = keyword_class + ident + open_curl + Group(ZeroOrMore(method_statement)) + close_curl
 def klass_action(s, loc, toks):
-    return ast.ClassDeclarationStatement(toks[0])
+    return ast.ClassDeclarationStatement(toks[0], *toks[1])
 klass.setParseAction(klass_action)
 klass_statement = klass + statement_end
 

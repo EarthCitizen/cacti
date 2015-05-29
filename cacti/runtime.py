@@ -32,7 +32,7 @@ class Callable(_Call):
                 'exp': len(self.__params),
                 'got': len(param_values)
                 }
-            raise ArityError("{caller}.{method_name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
+            raise ArityError("{caller}.{name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
         
     def __make_params_table(self, *param_values):
         param_table = SymbolTable()
