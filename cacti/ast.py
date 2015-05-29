@@ -153,8 +153,11 @@ class Block(Evaluable):
         self.__exprs = exprs
 
     def eval(self):
+        value = None
         for e in self.__exprs:
-            e()
+            value = e()
+        
+        return value
             
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, repr(self.__exprs))

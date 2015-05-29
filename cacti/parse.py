@@ -1,5 +1,9 @@
 import logging
 from pyparsing import *
+
+# HUGE speed increase after enabling packrat
+ParserElement.enablePackrat()
+
 from functools import reduce
 import cacti.runtime as rntm
 import cacti.builtin as bltn
@@ -27,7 +31,7 @@ close_curl = Literal("}").suppress()
 open_paren = Literal("(").suppress()
 close_paren = Literal(")").suppress()
 assignment_operator = Literal("=").suppress()
-statement_end = (Literal(";").suppress() | LineEnd().suppress() | StringEnd().suppress() | FollowedBy(Literal('}'))) #(Literal(";") ^ LineEnd() ^ StringEnd()).suppress()
+statement_end = (Literal(";").suppress() | LineEnd().suppress() | StringEnd().suppress() | FollowedBy(Literal('}')))
 
 ident = ident_word()
 
