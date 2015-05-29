@@ -6,6 +6,7 @@ ParserElement.enablePackrat()
 
 from functools import reduce
 import cacti.runtime as rntm
+import cacti.lang as lang
 import cacti.builtin as bltn
 import cacti.ast as ast
 
@@ -19,8 +20,10 @@ closure = Forward()
 function = Forward()
 value_operand = Forward()
 
+keyword_class = Keyword('class').suppress()
 keyword_closure = Keyword('closure').suppress()
 keyword_function = Keyword('function').suppress()
+keyword_method = Keyword('method').suppress()
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
 
@@ -123,15 +126,34 @@ closure_statement = closure + statement_end
 
 ### FUNCTION
 
-function <<= keyword_function + Optional(ident, default=None) + open_paren + Group(Optional(delimitedList(ident))) + close_paren + open_curl + block + close_curl
+function <<= keyword_function + \
+                Optional(ident, default=None) + \
+                open_paren + Group(Optional(delimitedList(ident))) + close_paren + \
+                open_curl + block + close_curl
 def function_action(s, loc, toks):
     return ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1])
 function.setParseAction(function_action)
 function_statement = function + statement_end
 
+### CLASS
+
+method = keyword_method + ident.copy().setName('name') + \
+                open_paren + Group(Optional(delimitedList(ident))).setName('params') + close_paren + \
+                open_curl + block.copy().setName('content') + close_curl
+def method_action(s, loc, toks):
+    method_callable = lang.Callable(toks.content, *toks.params)
+    return lang.MethodDefinition(toks.name, method_callable)
+method.setParseAction(method_action)
+
+klass = keyword_class + ident + open_curl + ZeroOrMore(method) + close_curl
+def klass_action(s, loc, toks):
+    return ast.ClassDeclarationStatement(toks[0])
+klass.setParseAction(klass_action)
+klass_statement = klass + statement_end
+
 ### STATEMENT
 
-statement <<= value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn ^ assignment_statement ^ function_statement
+statement <<= value_expression_statement ^ val_statement ^ var_statement_dec ^ var_statement_dec_asgn ^ assignment_statement ^ function_statement ^ klass_statement
 def statement_action(s, loc, tok):
     return tok[0]
 statement.setParseAction(statement_action)

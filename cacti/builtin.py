@@ -4,11 +4,24 @@ from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
 
-__all__ = ['get_type', 'get_builtin', 'get_builtin_table', 'initialize_builtins', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string']
+__all__ = [
+    'get_type', 'get_builtin', 'get_builtin_table', 'initialize_builtins',
+    'make_class', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string'
+]
 
 def make_object():
     obj = get_builtin('Object').hook_table['()'].call()
     return obj
+
+def make_class(name, superclass='Object', *, val_defs=None, var_defs=None, method_defs=None):
+    superobj = make_object()
+    typeobj = get_type('Class')
+    superclass = get_builtin('Object')
+    classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
+    
+    classdef.add_hook(MethodDefinition('()', Callable(_hook_new_callable_content)))
+    
+    return classdef   
 
 def make_main():
     typedef_superobj = make_object()

@@ -1,5 +1,6 @@
 from cacti.runtime import *
-from cacti.builtin import Closure, Function, ObjectDefinition
+from cacti.lang import ClassDefinition, Closure, Function, ObjectDefinition
+from cacti.builtin import make_class, make_object
 
 __all__ = [
     'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
@@ -84,6 +85,20 @@ class AssignmentStatement(Evaluable):
         
     def __repr__(self):
         return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__expr))
+    
+class ClassDeclarationStatement(Evaluable):
+    def __init__(self, name, *parts):
+        self.__name = name
+        self.__parts = parts
+        
+    def eval(self):
+        klass = make_class(self.__name)
+        table = peek_call_env().symbol_stack.peek()
+        table.add_symbol(self.__name, ConstantValueHolder(klass))
+        return klass
+    
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__parts))
 
 class ClosureDeclarationStatement(Evaluable):
     def __init__(self, expr, *params):

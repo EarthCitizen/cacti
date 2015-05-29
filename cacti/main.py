@@ -7,7 +7,7 @@ import pprint
 import logging
 import sys
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
+logging.basicConfig(level=logging.FATAL, format='%(asctime)s %(message)s')
 
 def set_up_main_call_env():
     mainobj = make_main()
