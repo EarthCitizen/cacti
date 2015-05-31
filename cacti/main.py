@@ -1,7 +1,7 @@
 from cacti.runtime import *
 from cacti.builtin import initialize_builtins, make_main, get_builtin, make_integer
 from cacti.lang import Function, Method, MethodDefinition
-from cacti.parse2 import parse_file, parse_string
+from cacti.parse import parse_file, parse_string
 
 import pprint
 import logging
