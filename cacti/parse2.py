@@ -42,12 +42,8 @@ def string_action(s, loc, toks):
 string.setParseAction(string_action)
 
 call_operator = open_paren + Group(Optional(delimitedList(value))) + close_paren
-def call_operator_action(s, loc, toks):
-    return reduce(lambda o1, o2: ast.OperationExpression(o1, '()', *o2), toks[0])
 
-property_operator = Group(OneOrMore(Literal('.').suppress() + identifier))
-def property_operator_action(s, loc, toks):
-    return ast.PropertyExpression(toks[0][0], *toks[0][1])
+property_operator = Literal('.').suppress() + identifier
 
 def binary_operation_action(s, loc, toks):
     operation = toks[0][1]
@@ -55,11 +51,20 @@ def binary_operation_action(s, loc, toks):
     expr = reduce(lambda o1, o2: ast.OperationExpression(o1, operation, o2), operands)
     return expr
 
+def call_property_operation_action(s, loc, toks):
+    operands = toks[0]
+    def list_reduction(a, b):
+        if isinstance(b, str):
+            return ast.PropertyExpression(a, b)
+        else:
+            return ast.OperationExpression(a, '()', *b)
+    return reduce(list_reduction, operands)
+    
+def tmp(s, loc, toks):
+    print(toks)
+
 operators = [
-    ('~', 1, opAssoc.LEFT),
-    ('<', 1, opAssoc.LEFT),
-    (property_operator, 1, opAssoc.LEFT), #, property_operator_action),
-    (call_operator, 1, opAssoc.LEFT, call_operator_action),
+    ((property_operator ^ call_operator), 1, opAssoc.LEFT, call_property_operation_action),
     ("*", 2, opAssoc.LEFT, binary_operation_action),
     ("/", 2, opAssoc.LEFT, binary_operation_action),
     ("+", 2, opAssoc.LEFT, binary_operation_action),
