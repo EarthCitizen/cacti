@@ -8,7 +8,7 @@ import cacti.lang as lang
 import cacti.builtin as bltn
 import cacti.ast as ast
 
-__all__ = ['parse_file']
+__all__ = ['parse_file', 'parse_string']
 
 open_curl = Literal("{").suppress()
 close_curl = Literal("}").suppress()
@@ -21,7 +21,13 @@ keyword_function = Keyword('function').suppress()
 keyword_method = Keyword('method').suppress()
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
+assignment_operator = Literal("=").suppress()
+statement_end = (LineEnd().suppress() | Literal(";").suppress() | StringEnd().suppress() | FollowedBy(Literal('}')))
 
+block = Forward()
+closure = Forward()
+function = Forward()
+klass = Forward()
 value = Forward()
 
 identifier = Word('_' + alphas, bodyChars='_' + alphanums)
@@ -60,9 +66,6 @@ def call_property_operation_action(s, loc, toks):
             return ast.OperationExpression(a, '()', *b)
     return reduce(list_reduction, operands)
     
-def tmp(s, loc, toks):
-    print(toks)
-
 operators = [
     ((property_operator ^ call_operator), 1, opAssoc.LEFT, call_property_operation_action),
     ("*", 2, opAssoc.LEFT, binary_operation_action),
@@ -73,10 +76,91 @@ operators = [
 
 operand = (reference | integer | string)
 
-value <<= (infixNotation(operand, operators))
+value <<= (infixNotation(operand, operators) ^ closure ^ function ^ klass)
+
+value_statement = value + statement_end
+
+### VAL
+
+val_statement = keyword_val + identifier + assignment_operator + value + statement_end
+def val_statement_action(s, loc, toks):
+    return ast.ValDeclarationStatement(toks[0], toks[1])
+val_statement.setParseAction(val_statement_action)
+
+### VAR
+
+def var_statement_action(s, loc, toks):
+    symbol = toks[0]
+    if len(toks) == 2:
+        return ast.VarDeclarationStatement(symbol, toks[1])
+    else:
+        return ast.VarDeclarationStatement(symbol, ast.ReferenceExpression('nothing'))
+
+var_declaration_assign = keyword_var + identifier + assignment_operator + value
+var_declaration_assign.setParseAction(var_statement_action)
+
+var_declaration = keyword_var + identifier
+var_declaration.setParseAction(var_statement_action)
+
+var_statement = (var_declaration_assign | var_declaration) + statement_end
+
+### ASSIGNMENT
+
+assignment_statement = identifier + assignment_operator + value + statement_end
+def assignment_statement_action(s, loc, toks):
+    return ast.AssignmentStatement(toks[0], toks[1])
+assignment_statement.setParseAction(assignment_statement_action)
+
+### CLOSURE
+
+closure <<= keyword_closure + open_paren + Group(Optional(delimitedList(identifier))) + close_paren + open_curl + block + close_curl
+def closure_action(s, loc, toks):
+    return ast.ClosureDeclarationStatement(toks[1], *toks[0])
+closure.setParseAction(closure_action)
+closure_statement = closure + statement_end
+
+### FUNCTION
+
+function <<= keyword_function + \
+                Optional(identifier, default=None) + \
+                open_paren + Group(Optional(delimitedList(identifier))) + close_paren + \
+                open_curl + block + close_curl
+def function_action(s, loc, toks):
+    return ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1])
+function.setParseAction(function_action)
+function_statement = function + statement_end
+
+### CLASS
+
+method = keyword_method + identifier + \
+                open_paren + Group(Optional(delimitedList(identifier))) + close_paren + \
+                open_curl + block + close_curl
+def method_action(s, loc, toks):
+    return ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1])
+method.setParseAction(method_action)
+
+method_statement = method + statement_end
+
+klass <<= keyword_class + identifier + open_curl + Group(ZeroOrMore(method_statement)) + close_curl
+def klass_action(s, loc, toks):
+    return ast.ClassDeclarationStatement(toks[0], *toks[1])
+klass.setParseAction(klass_action)
+klass_statement = klass + statement_end
+
+### STATEMENT
+
+statement = (val_statement | var_statement | value_statement | assignment_statement)
+
+### BLOCK
+
+block <<= ZeroOrMore(statement)
+def block_action(s, loc, tok):
+    return ast.Block(*tok)
+block.setParseAction(block_action)
+
+def parse_string(string):
+    return value.parseString(string, parseAll=True)
 
 def parse_file(file):
-    #return block.parseFile(file, parseAll=True)[0]
-    return value.parseFile(file, parseAll=True)
-
+    return block.parseFile(file, parseAll=True)[0]
 

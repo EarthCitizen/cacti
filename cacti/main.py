@@ -1,7 +1,7 @@
 from cacti.runtime import *
 from cacti.builtin import initialize_builtins, make_main, get_builtin, make_integer
 from cacti.lang import Function, Method, MethodDefinition
-from cacti.parse import parse_file, parse_string
+from cacti.parse2 import parse_file, parse_string
 
 import pprint
 import logging
@@ -21,15 +21,15 @@ def main():
     set_up_main_call_env()
     logging.debug('finished env()')
     
-    #ast = parse_string('X + X + 10 + 50 + 3 + 1000 + 3')
+    #ast = parse_string('class foo {}')
     #print(ast)
     #ast()
     
     ast = parse_file(sys.argv[1])
-    logging.debug('finished parse()')
+    #logging.debug('finished parse()')
     #print(ast)
     ast()
-    logging.debug('finished exec()')
+    #logging.debug('finished exec()')
     
 if __name__ == '__main__':
     main()
