@@ -15,17 +15,15 @@ def set_up_main_call_env():
     push_call_env(call_env)
 
 def main():
-    logging.debug('main()')
     initialize_builtins()
-    logging.debug('finished init()')
     set_up_main_call_env()
-    logging.debug('finished env()')
     
     #ast = parse_string('class foo {}')
     #print(ast)
     #ast()
     
     ast = parse_file(sys.argv[1])
+    #ast = parse_file('/Users/ryan/Dropbox/repositories/cacti/examples/class.cacti')
     #logging.debug('finished parse()')
     #print(ast)
     ast()

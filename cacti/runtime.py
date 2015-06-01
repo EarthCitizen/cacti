@@ -56,7 +56,9 @@ class Callable(_Call):
         
 class ClosureBinding(_Call):
     def __init__(self, call_env, kallable):
+        print("->OWNER: " + str(id(call_env.owner)))
         self.__call_env = copy.copy(call_env)
+        print("->COPY OWNER: " + str(id(self.__call_env.owner)))
         self.__callable = kallable
         
     def call(self, *params):
@@ -94,14 +96,41 @@ class MethodBinding(_Call):
 
 CALL_ENV_STACK = collections.deque()
 
+def __stack_info(prefix, call_env):
+    owner = call_env.owner
+    global lvl_str
+    global lvl
+    print((lvl_str * lvl) + "{} {} {} {} {}".format(prefix, str(id(owner)), str(owner), str(owner.typeobj), call_env.name))
+    
+lvl_str = '\t'
+lvl = 0
+
 def push_call_env(call_env):
+    global lvl_str
+    global lvl
+    __stack_info("::PUSH: ", call_env)
+    lvl += 1
+    #print("::PUSH: " + str(call_env.owner.typeobj))
+    #if call_env.owner and call_env.owner.typeobj and (call_env.owner.typeobj.name == 'Integer'):
+    #    from cacti.debug import print_stack_trace
+    #    print_stack_trace()
+    #if call_env is None:
+    #raise Exception('This should never be none')
+    #if call_env.owner.typeobj.name == 'Integer':
+    #    raise Exception('What the hell?')
     CALL_ENV_STACK.appendleft(call_env)
     
 def peek_call_env(pos=0):
-    return CALL_ENV_STACK[pos]
+    call_env = CALL_ENV_STACK[pos]
+    __stack_info("::->PEEK: ", call_env)
+    return call_env
     
 def pop_call_env():
     popped = CALL_ENV_STACK.popleft()
+    global lvl_str
+    global lvl
+    lvl -= 1
+    __stack_info("::POPPED: ", popped)
     return popped
 
 class CallEnv:
@@ -128,6 +157,8 @@ class CallEnv:
     def __copy__(self):
         inst_copy = self.__class__(self.__owner, self.__name)
         inst_copy.__symbol_stack = copy.copy(self.__symbol_stack)
+        print("COPY Owner was: " + str(self.__owner))
+        print("COPY Owner new: " + str(inst_copy.__owner))
         return inst_copy
         
     def __repr__(self):
@@ -259,6 +290,7 @@ class SymbolTable:
         return False
         
     def __getitem__(self, key):
+        #print("++ KEY: " + key)
         if key in self.__table.keys():
             return self.__table[key].value
         if self.__parent_table:

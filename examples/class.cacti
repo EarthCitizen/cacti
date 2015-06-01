@@ -1,13 +1,10 @@
 class X {
-	method foo(a, b, c) {
-		a + b + c
+	method get_self_clos() {
+		closure () { self.id }
 	}
 };
 
-print(X)
-print(X())
-var x = X()
-print(x.foo)
-var t = x.foo
-print(t(9, 10, 100))
+var d = X()
 
+print("")
+print("GET_SELF_CLOS: " + d.get_self_clos()().string)

@@ -96,13 +96,11 @@ def var_statement_action(s, loc, toks):
     else:
         return ast.VarDeclarationStatement(symbol, ast.ReferenceExpression('nothing'))
 
-var_declaration_assign = keyword_var + identifier + assignment_operator + value
-var_declaration_assign.setParseAction(var_statement_action)
+var_assign = keyword_var + identifier + assignment_operator + value
+var_no_assign = keyword_var + identifier
 
-var_declaration = keyword_var + identifier
-var_declaration.setParseAction(var_statement_action)
-
-var_statement = (var_declaration_assign | var_declaration) + statement_end
+var_statement = (var_assign | var_no_assign) + statement_end
+var_statement.setParseAction(var_statement_action)
 
 ### ASSIGNMENT
 
@@ -139,9 +137,25 @@ def method_action(s, loc, toks):
     return ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1])
 method.setParseAction(method_action)
 
-method_statement = method + statement_end
+method_statment = method + statement_end
 
-klass <<= keyword_class + identifier + open_curl + Group(ZeroOrMore(method_statement)) + close_curl
+klass_val_statement = val_statement.copy()
+def klass_val_statement_action(s, loc, toks):
+    return lang.ValDefinition(toks[0], toks[1])
+klass_val_statement.setParseAction(klass_val_statement_action)
+
+klass_var_statement = var_statement.copy()
+def klass_var_statement_action(s, loc, toks):
+    symbol = toks[0]
+    if len(toks) == 2:
+        return lang.VarDefinition(symbol, toks[1])
+    else:
+        return lang.VarDefinition(symbol, ast.ReferenceExpression('nothing'))
+klass_var_statement.setParseAction(klass_var_statement_action)
+
+klass_content_statement = (method_statment | klass_val_statement | klass_var_statement)
+
+klass <<= keyword_class + identifier + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
 def klass_action(s, loc, toks):
     return ast.ClassDeclarationStatement(toks[0], *toks[1])
 klass.setParseAction(klass_action)

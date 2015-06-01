@@ -98,6 +98,10 @@ class ClassDeclarationStatement(Evaluable):
         for p in self.__parts:
             if isinstance(p, MethodDefinitionDeclarationStatement):
                 klass.add_method_definition(p())
+            elif isinstance(p, ValDefinition):
+                klass.add_val_definition(p)
+            elif isinstance(p, VarDefinition):
+                klass.add_var_definition(p)
         
         table = peek_call_env().symbol_stack.peek()
         table.add_symbol(self.__name, ConstantValueHolder(klass))

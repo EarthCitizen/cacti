@@ -19,7 +19,14 @@ def make_class(name, superclass='Object', *, val_defs=None, var_defs=None, metho
     superclass = get_builtin('Object')
     classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
     
-    classdef.add_hook(MethodDefinition('()', Callable(_hook_new_callable_content)))
+    def tmp():
+        obj = _hook_new_callable_content()
+        if name == 'X':
+            print("Obj: " + str(id(obj)))
+        return obj
+            
+    
+    classdef.add_hook(MethodDefinition('()', Callable(tmp)))
     
     return classdef   
 
@@ -49,6 +56,8 @@ def make_integer(value=0):
     assert isinstance(value, int)
     obj = get_builtin('Integer').hook_table['()'].call()
     obj.primitive = value
+    print("MAKE INTEGER ID: " + str(id(obj)))
+    print("MAKE INTEGER: " + str(value))
     return obj
 
 class _StubCallable:
@@ -65,7 +74,6 @@ def _hook_new_callable_content():
     superobj = superclass_def.hook_table['()'].call() if superclass_def else None
     obj = ObjectDefinition(superobj, typeobj=class_def)
     _init_object_def_from_class_def(obj, class_def)
-    
     return obj
 
 def _make_hook_new_method_def():
@@ -291,6 +299,7 @@ def _make_numeric_class(class_name, converter):
         obj = _hook_new_callable_content()
         obj.primitive = 0
         obj.to_string = types.MethodType(lambda self: make_string(str(self.primitive)), obj)
+        print('MAKING NUMERIC: ' + str(id(obj)))
         return obj
         
     classdef.add_hook(MethodDefinition('()', Callable(new_callable_content)))
