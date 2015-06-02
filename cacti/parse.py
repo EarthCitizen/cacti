@@ -24,6 +24,8 @@ keyword_val = Keyword('val').suppress()
 assignment_operator = Literal("=").suppress()
 statement_end = (LineEnd().suppress() | Literal(";").suppress() | StringEnd().suppress() | FollowedBy(Literal('}')))
 
+comment = (Literal('#') + restOfLine).suppress()
+
 block = Forward()
 closure = Forward()
 function = Forward()
@@ -163,7 +165,7 @@ klass_statement = klass + statement_end
 
 ### STATEMENT
 
-statement = (val_statement | var_statement | value_statement | assignment_statement)
+statement = (val_statement | var_statement | value_statement | assignment_statement | comment)
 
 ### BLOCK
 
