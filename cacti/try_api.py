@@ -12,17 +12,30 @@ push_call_env(call_env)
 
 #print(make_string('foo')['id']['type']['name'])
 
-expr = PropertyExpression(ValueExpression(make_string('foo')), *['id', 'type', 'name'])
-print(expr())
+# expr = PropertyExpression(ValueExpression(make_string('foo')), *['id', 'type', 'name'])
+# print(expr())
 
-# sp = SymbolTable()
-# sp.add_symbol('y', ValueHolder(make_string('first y')))
-# st = SymbolTable()
-# st.add_symbol('x', ValueHolder(make_integer(5)))
+sp = SymbolTable()
+sp.add_symbol('y', ValueHolder(make_string('first y')))
+st = SymbolTable()
+st.add_symbol('x', ValueHolder(make_integer(5)))
+sb = SymbolTable()
+sb.add_symbol('z', ValueHolder(make_integer(10)))
 
-# ss = SymbolTableStack()
-# ss.push(sp)
-# ss.push(st)
+ss = SymbolTableStack()
+ss.push(sp)
+ss.push(st)
+ss.push(sb)
+
+print(ss)
+
+print(id(ss['x']))
+
+ss2 = copy(ss)
+
+print(ss2)
+
+print(id(ss2['x']))
  
 # #print(ss)
 

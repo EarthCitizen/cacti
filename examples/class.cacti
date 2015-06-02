@@ -9,7 +9,7 @@ class X {
 
 var d = X()
 
-print("**********GET_SELF_ID: " + d.get_self_id().string)
-print("**********GET_SELF_ID2: " + d.get_self_id().string)
-print("**********GET_SELF_CLOS: " + d.get_self_clos()().string)
-print("**********GET_SELF_CLOS2: " + d.get_self_clos()().string)
+print("GET_SELF_ID: " + d.get_self_id().string)
+print("GET_SELF_ID2: " + d.get_self_id().string)
+print("GET_SELF_CLOS: " + d.get_self_clos()().string)
+print("GET_SELF_CLOS2: " + d.get_self_clos()().string)

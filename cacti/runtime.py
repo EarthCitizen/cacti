@@ -106,13 +106,13 @@ lvl = 0
 def push_call_env(call_env):
     global lvl_str
     global lvl
-    __stack_info("::->PUSH({}): ".format(lvl), call_env)
+    #__stack_info("::->PUSH({}): ".format(lvl), call_env)
     lvl += 1
     CALL_ENV_STACK.appendleft(call_env)
     
 def peek_call_env(pos=0):
     call_env = CALL_ENV_STACK[pos]
-    __stack_info("::-PEEK({}): ".format(lvl-1), call_env)
+    #__stack_info("::-PEEK({}): ".format(lvl-1), call_env)
     return call_env
     
 def pop_call_env():
@@ -120,7 +120,7 @@ def pop_call_env():
     global lvl_str
     global lvl
     lvl -= 1
-    __stack_info("::<-POPPED({}): ".format(lvl), popped)
+    #__stack_info("::<-POPPED({}): ".format(lvl), popped)
     return popped
 
 class CallEnv:
@@ -355,8 +355,10 @@ class SymbolTableStack:
         return self.__stack.popleft()
     
     def __copy__(self):
-        stack_copy = copy.deepcopy(self.__stack)
         inst_copy =  self.__class__()
+        stack_copy = collections.deque()
+        for s in self.__stack:
+            stack_copy.append(copy.copy(s))
         inst_copy.__stack = stack_copy
         return inst_copy
         
