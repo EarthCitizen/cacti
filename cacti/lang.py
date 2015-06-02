@@ -126,7 +126,7 @@ class ObjectDefinition:
         return str(self)
     
     def __str__(self):
-        return self.to_string().primitive
+        return self.to_string()
     
     # This is a workaround to the fact that
     # str() will not call the __str__() that
@@ -139,7 +139,7 @@ class ObjectDefinition:
         else:
             ret_val = "{}<'{}'>".format(self.typeobj.name, self.name)
         
-        return make_string(ret_val)
+        return ret_val
 
 class PrimitiveObjectDefinition(ObjectDefinition):
     def __init__(self, superobj, *, typeobj=None, name=''):

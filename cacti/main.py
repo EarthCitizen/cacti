@@ -28,6 +28,9 @@ def main():
     #print(ast)
     ast()
     #logging.debug('finished exec()')
+    #i = make_integer(7)
+    #print('=======')
+    #print(i.typeobj.to_string())
     
 if __name__ == '__main__':
     main()

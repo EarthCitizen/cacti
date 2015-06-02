@@ -1,4 +1,7 @@
 class X {
+	method get_self_id() {
+		self.id
+	}
 	method get_self_clos() {
 		closure () { self.id }
 	}
@@ -6,5 +9,7 @@ class X {
 
 var d = X()
 
-print("")
-print("GET_SELF_CLOS: " + d.get_self_clos()().string)
+print("**********GET_SELF_ID: " + d.get_self_id().string)
+print("**********GET_SELF_ID2: " + d.get_self_id().string)
+print("**********GET_SELF_CLOS: " + d.get_self_clos()().string)
+print("**********GET_SELF_CLOS2: " + d.get_self_clos()().string)
