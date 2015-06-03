@@ -321,6 +321,28 @@ def _make_function_print():
         
     fn = Function('print', fn_callable)
     add_builtin(fn.name, fn)
+    
+def _make_function_log_debug():
+    import logging
+    def fn():
+        print("Setting to DEBUG")
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    fn_callable = Callable(fn)
+        
+    fn = Function('log_debug', fn_callable)
+    add_builtin(fn.name, fn)
+
+def _make_function_log_info():
+    import logging
+    def fn():
+        print("Setting to INFO")
+        logging.getLogger().setLevel(logging.INFO)
+    
+    fn_callable = Callable(fn)
+        
+    fn = Function('log_info', fn_callable)
+    add_builtin(fn.name, fn)
 
 def initialize_builtins():
     _bootstrap_basic_types()
@@ -330,5 +352,8 @@ def initialize_builtins():
     _make_string_class()
     _make_nothing()
     _make_function_print()
+    _make_function_log_debug()
+    _make_function_log_info()
     _make_numeric_class('Integer', int)
     _make_numeric_class('Float', float)
+    

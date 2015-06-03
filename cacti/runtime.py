@@ -1,7 +1,9 @@
 import re
 import collections
 import copy
+import logging
 from cacti.exceptions import *
+from cacti.debug import get_logger
 
 __all__ = [
            # Functions
@@ -19,7 +21,9 @@ class _Call:
         return self.call(*params)
     
 class Callable(_Call):
+    
     def __init__(self, content, *params):
+        self.logger = get_logger(self)
         self.__params = params
         self.__content = content
         
@@ -42,6 +46,7 @@ class Callable(_Call):
         return param_table
     
     def call(self, *param_values):
+        self.logger.debug("Parameters: {}".format(str(param_values)))
         from cacti.builtin import get_builtin
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
@@ -52,6 +57,7 @@ class Callable(_Call):
         symbol_stack.pop()
         if return_value is None:
             return_value = get_builtin('nothing')
+        self.logger.debug("Returning: {}".format(str(return_value)))
         return return_value
         
 class ClosureBinding(_Call):
@@ -79,6 +85,7 @@ class FunctionBinding(_Call):
         
 class MethodBinding(_Call):
     def __init__(self, owner, method_def):
+        self.logger = get_logger(self)
         self.__owner = owner
         self.__method_def = method_def
         
@@ -86,19 +93,37 @@ class MethodBinding(_Call):
         call_env = CallEnv(self.__owner, self.__method_def.name)
         push_call_env(call_env)
         super_self = call_env.symbol_stack.peek()
+        
+        self.logger.debug('Adding self: ' + str(self.__owner.selfobj))
         super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
+        
+        self.logger.debug('Adding super: ' + str(self.__owner.superobj))
         super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
+        
         return_value = self.__method_def.callable.call(*params)
+        self.logger.debug('Returning: ' + str(return_value))
+        
         pop_call_env()
         return return_value
 
 CALL_ENV_STACK = collections.deque()
 
+__debug_stack = False
+
 def __stack_info(prefix, call_env):
     owner = call_env.owner
     global lvl_str
     global lvl
-    print((lvl_str * lvl) + "{} {} {} {} {}".format(prefix, str(id(owner)), str(owner), str(owner.typeobj), call_env.name))
+    selfobj = call_env.symbol_stack['self'] if 'self' in call_env.symbol_stack else ''
+    superobj = call_env.symbol_stack['super'] if 'super' in call_env.symbol_stack else ''
+    print((lvl_str * lvl) + "{} {} {} {} {} SELF: {} SUPER: {}".format(
+        prefix,
+        str(id(owner)),
+        str(owner),
+        str(owner.typeobj),
+        call_env.name,
+        str(selfobj),
+        str(superobj)))
     
 lvl_str = '\t'
 lvl = 0
@@ -106,13 +131,15 @@ lvl = 0
 def push_call_env(call_env):
     global lvl_str
     global lvl
-    #__stack_info("::->PUSH({}): ".format(lvl), call_env)
+    if __debug_stack:
+        __stack_info("::->PUSH({}): ".format(lvl), call_env)
     lvl += 1
     CALL_ENV_STACK.appendleft(call_env)
     
 def peek_call_env(pos=0):
     call_env = CALL_ENV_STACK[pos]
-    #__stack_info("::-PEEK({}): ".format(lvl-1), call_env)
+    if __debug_stack:
+        __stack_info("::-PEEK({}): ".format(lvl-1), call_env)
     return call_env
     
 def pop_call_env():
@@ -120,7 +147,8 @@ def pop_call_env():
     global lvl_str
     global lvl
     lvl -= 1
-    #__stack_info("::<-POPPED({}): ".format(lvl), popped)
+    if __debug_stack:
+        __stack_info("::<-POPPED({}): ".format(lvl), popped)
     return popped
 
 class CallEnv:
@@ -162,12 +190,17 @@ class CallEnv:
 
 class ValueHolder:
     def __init__(self, value):
+        self.logger = get_logger(self)
+        
         self.__value = value
         
     def get_value(self):
-        return self.__value
+        return_value = self.__value
+        self.logger.debug('Get: ' + str(return_value))
+        return return_value
     
     def set_value(self, value):
+        self.logger.debug('Set: ' + str(value))
         self.__value = value
         
     def __copy__(self):
@@ -190,13 +223,19 @@ class ConstantValueHolder(ValueHolder):
     
 class PropertyGetSetValueHolder(ValueHolder):
     def __init__(self, getter, setter):
+        self.logger = get_logger(self)
+        self.logger.debug('Create')
+        
         self.__get = getter
         self.__set = setter
     
     def get_value(self):
-        return self.__get.call()
+        return_value = self.__get.call()
+        self.logger.debug('Get: ' + str(return_value))
+        return return_value
     
     def set_value(self, value):
+        self.logger.debug('Set: ' + str(value))
         self.__set.call(value)
         
     def __copy__(self):
@@ -206,10 +245,14 @@ class PropertyGetSetValueHolder(ValueHolder):
 
 class PropertyGetValueHolder(ConstantValueHolder):
     def __init__(self, getter):
+        self.logger = get_logger(self)
+        self.logger.debug('Create')
         self.__get = getter
     
     def get_value(self):
-        return self.__get.call()
+        return_value = self.__get.call()
+        self.logger.debug('Returning: ' + str(return_value))
+        return return_value
     
     def __copy__(self):
         return self
@@ -234,6 +277,8 @@ def isvalidhook(symbol):
 
 class SymbolTable:
     def __init__(self, from_dict={}, parent_table=None, symbol_validator=isvalidsymbol):
+        self.logger = get_logger(self)
+        
         if not isinstance(from_dict, dict):
             raise TypeError("from_map must be a 'dict'")
         
@@ -279,17 +324,23 @@ class SymbolTable:
         
     def __getitem__(self, key):
         if key in self.__table.keys():
-            return self.__table[key].value
+            return_value = self.__table[key].value
+            self.logger.debug("For symbol '{}' found: '{}'".format(key, str(return_value)))
+            return return_value
         if self.__parent_table:
-            return self.__parent_table[key]
+            return_value = self.__parent_table[key]
+            self.logger.debug("For symbol '{}' found: '{}'".format(key, str(return_value)))
+            return return_value
         
         raise SymbolUnknownError(key)
         
     def __setitem__(self, key, value):
         if key in self.__table.keys():
             self.__table[key].value = value
+            self.logger.debug("Set symbol '{}' to: '{}'".format(key, str(value)))
         elif self.__parent_table:
             self.__parent_table[key] = value
+            self.logger.debug("Set symbol '{}' to: '{}'".format(key, str(value)))
         else:
             raise SymbolUnknownError(key)
         
@@ -302,6 +353,8 @@ class SymbolTable:
 
 class SymbolTableChain:
     def __init__(self, *context_chain):
+        self.logger = get_logger(self)
+        
         for t in context_chain:
             if not isinstance(t, SymbolTable) and not isinstance(t, SymbolTableChain):
                 raise TypeError("All elements in the chain must be a 'SymbolTable'")
@@ -343,6 +396,7 @@ class SymbolTableChain:
 
 class SymbolTableStack:
     def __init__(self):
+        self.logger = get_logger(self)
         self.__stack = collections.deque()
         
     def push(self, table):
@@ -372,13 +426,16 @@ class SymbolTableStack:
     def __getitem__(self, symbol_name):
         for table in self.__stack:
             if symbol_name in table:
-                return table[symbol_name]
+                return_value = table[symbol_name]
+                self.logger.debug("For symbol '{}' found: '{}'".format(symbol_name, str(return_value)))
+                return return_value
                  
         raise SymbolUnknownError(symbol_name)
     
     def __setitem__(self, symbol_name, symbol_value):
         for table in self.__stack:
             if symbol_name in table:
+                self.logger.debug("Set symbol '{}' to: '{}'".format(symbol_name, str(symbol_value)))
                 table[symbol_name] = symbol_value
                 return
                  

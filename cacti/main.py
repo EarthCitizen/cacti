@@ -7,7 +7,8 @@ import pprint
 import logging
 import sys
 
-logging.basicConfig(level=logging.FATAL, format='%(asctime)s %(message)s')
+logging.basicConfig(level=logging.FATAL, format='%(levelname)s | %(filename)s:%(lineno)d | %(name)s.%(funcName)s: %(message)s')
+#logging.getLogger().setLevel(logging.INFO)
 
 def set_up_main_call_env():
     mainobj = make_main()
@@ -24,7 +25,7 @@ def main():
     
     ast = parse_file(sys.argv[1])
     #ast = parse_file('/Users/ryan/Dropbox/repositories/cacti/examples/class.cacti')
-    #logging.debug('finished parse()')
+    logging.debug('finished parse()')
     #print(ast)
     ast()
     #logging.debug('finished exec()')

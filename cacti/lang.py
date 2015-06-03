@@ -1,3 +1,5 @@
+import logging
+from cacti.debug import get_logger
 from cacti.runtime import *
 from cacti.exceptions import *
 
@@ -7,6 +9,8 @@ __all__ = ['ClassDefinition', 'Closure', 'Function', 'Method', 'MethodDefinition
 # All ObjectDefinition Instances Have This
 class ObjectDefinition:
     def __init__(self, superobj, *, typeobj=None, name=''):
+        self.logger = get_logger(self)
+        
         self.__typeobj = typeobj
         self.__name = name
         self.__selfobj = self
@@ -34,9 +38,11 @@ class ObjectDefinition:
         
     def set_selfobj(self, selfobj):
         self.__selfobj = selfobj
+        self.logger.debug("Set selfobj of '{}' to: '{}'".format(self, str(self.__selfobj)))
         
     def set_superobj(self, superobj):
         self.__superobj = superobj
+        self.logger.debug("Set superobj of '{}' to: '{}'".format(self, str(self.__superobj)))
         if self.__superobj:
             self.__superobj.set_selfobj(self)
     
@@ -62,6 +68,7 @@ class ObjectDefinition:
     
     @property
     def superobj(self):
+        self.logger.debug("Returning: '{}'".format(str(self.__superobj)))
         return self.__superobj
         
     @property
@@ -116,6 +123,9 @@ class ObjectDefinition:
     
     def __getitem__(self, symbol_name):
         petitioner = peek_call_env().owner
+        if 'id' == symbol_name:
+            print('ID OWNER: ' + str(peek_call_env().owner))
+            print('WILL GO TO GET ID NOW')
         return self.__public_or_private_table(petitioner)[symbol_name]
     
     def __setitem__(self, symbol_name, symbol_value):
@@ -134,7 +144,9 @@ class ObjectDefinition:
     def to_string(self):
         from cacti.builtin import make_string
         
-        if (self.name is None) or ('' == self.name):
+        if (self.typeobj is None):
+            ret_val = '<UNKNOWN><{}>'.format(id(self))
+        elif (self.name is None) or ('' == self.name):
             ret_val = '{}<{}>'.format(self.typeobj.name, id(self))
         else:
             ret_val = "{}<'{}'>".format(self.typeobj.name, self.name)

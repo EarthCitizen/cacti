@@ -1,0 +1,8 @@
+var x = 5
+
+print(x)
+
+log_debug()
+print(x)
+log_info()
+print(x)

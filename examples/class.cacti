@@ -5,11 +5,25 @@ class X {
 	method get_self_clos() {
 		closure () { self.id }
 	}
+	method get_super_id() {
+		super.id
+	}
+	method get_super() {
+		super
+	}
+	method get_five() { var x = 5; x }
 };
 
 var d = X()
 
-print("GET_SELF_ID: " + d.get_self_id().string)
-print("GET_SELF_ID2: " + d.get_self_id().string)
-print("GET_SELF_CLOS: " + d.get_self_clos()().string)
-print("GET_SELF_CLOS2: " + d.get_self_clos()().string)
+#print("GET_SELF_ID: " + d.get_self_id().string)
+#print("GET_SELF_ID2: " + d.get_self_id().string)
+#print("GET_SELF_CLOS: " + d.get_self_clos()().string)
+#print("GET_SELF_CLOS2: " + d.get_self_clos()().string)
+#print("GET_SUPER_ID: " + d.get_super_id().string)
+var s = d.get_super()
+log_debug()
+s.string
+log_info()
+print(s)
+print(s.string)
