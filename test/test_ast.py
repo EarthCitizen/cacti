@@ -33,14 +33,13 @@ class TestPropertyExpression:
         prop_expr = PropertyExpression(ValueExpression(obj), *prop_list)
         assert prop_expr().primitive == 'Integer'
         
-
+@pytest.mark.usefixtures('set_up_env')
 class TestReferenceExpression:
     def test_returns_dereferenced_value(self):
         table = SymbolTable()
         table.add_symbol('X', ConstantValueHolder(123))
-        call_env = CallEnv(object(), 'test')
+        call_env = peek_call_env()
         call_env.symbol_stack.push(table)
-        push_call_env(call_env)
         expr = ReferenceExpression('X')
         assert 123 == expr()
 

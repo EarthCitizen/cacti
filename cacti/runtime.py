@@ -163,6 +163,8 @@ def pop_call_env():
 class CallEnv:
     def __init__(self, owner, name, selfobj=None):
         from cacti.builtin import get_builtin_table
+        from cacti.lang import ObjectDefinition
+        assert isinstance(owner, ObjectDefinition)
         self.__owner = owner
         self.__name = name
         self.__selfobj = selfobj
@@ -411,9 +413,12 @@ class SymbolTableChain:
             
 
 class SymbolTableStack:
-    def __init__(self):
+    def __init__(self, *symbol_tables):
         self.logger = get_logger(self)
         self.__stack = collections.deque()
+        
+        for s in symbol_tables:
+            self.push(s)
         
     def push(self, table):
         self.__stack.appendleft(table)

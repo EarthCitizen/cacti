@@ -4,15 +4,6 @@ from cacti.runtime import *
 from cacti.builtin import *
 from cacti.lang import *
 
-# def set_up_env(**kwargs):
-#         call_env = CallEnv(make_object(), 'test')
-#         table = SymbolTable()
-#         
-#         for k, v in kwargs.items():
-#             table.add_symbol(k, v)
-#             
-#         push_call_env(call_env)
-
 class TestValueHolder:
     def test_accepts_value(self):
         holder = ValueHolder(123)
@@ -242,6 +233,21 @@ class TestSymbolTableChain:
         assert False == ('c' in chain)
 
 class TestSymbolTableStack:
+    
+    def test_adds_tables_from_ctor(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        stack = SymbolTableStack(t1, t2, t3)
+        assert [4, 3, 2] == [stack['x'], stack['y'], stack['z']]
+        
+    def test_shadows_values(self):
+        t1 = SymbolTable({'x': ValueHolder(4)})
+        t2 = SymbolTable({'y': ValueHolder(3)})
+        t3 = SymbolTable({'z': ValueHolder(2)})
+        t4 = SymbolTable({'x': ValueHolder(-1)})
+        stack = SymbolTableStack(t1, t2, t3, t4)
+        assert [-1, 3, 2] == [stack['x'], stack['y'], stack['z']]
     
     def test_gets_value_from_stack(self):
         t1 = SymbolTable({'x': ValueHolder(4)})
