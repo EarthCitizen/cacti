@@ -1,5 +1,6 @@
 from cacti.runtime import *
 from cacti.builtin import initialize_builtins, make_main, get_builtin, make_integer
+from cacti.debug import configure_logging
 from cacti.lang import Function, Method, MethodDefinition
 from cacti.parse import parse_file, parse_string
 
@@ -7,8 +8,10 @@ import pprint
 import logging
 import sys
 
-logging.basicConfig(level=logging.FATAL, format='%(levelname)s | %(filename)s:%(lineno)d | %(name)s.%(funcName)s: %(message)s')
+#logging.basicConfig(level=logging.FATAL)#, format='%(levelname)s | %(filename)s:%(lineno)d | %(name)s.%(funcName)s: %(message)s')
 #logging.getLogger().setLevel(logging.INFO)
+
+configure_logging()
 
 def set_up_main_call_env():
     mainobj = make_main()
