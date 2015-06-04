@@ -5,6 +5,8 @@ class X {
 	
 	var c = closure() {something + x}
 	
+	var fn = function foo() { 1500 }
+	
 	method get_c() {self.c}
 	
 	method foo(value) {
