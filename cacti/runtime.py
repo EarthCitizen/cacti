@@ -121,16 +121,17 @@ def __stack_info(prefix, call_env):
     owner = call_env.owner
     global lvl_str
     global lvl
-    selfobj = call_env.symbol_stack['self'] if 'self' in call_env.symbol_stack else ''
-    superobj = call_env.symbol_stack['super'] if 'super' in call_env.symbol_stack else ''
+    #selfobj = call_env.symbol_stack['self'] if 'self' in call_env.symbol_stack else ''
+    #superobj = call_env.symbol_stack['super'] if 'super' in call_env.symbol_stack else ''
     print((lvl_str * lvl) + "{} {} {} {} {} SELF: {} SUPER: {}".format(
         prefix,
         str(id(owner)),
         str(owner),
         str(owner.typeobj),
         call_env.name,
-        str(selfobj),
-        str(superobj)))
+        None, #str(selfobj),
+        None #str(superobj)
+        ))
     
 lvl_str = '\t'
 lvl = 0
@@ -341,13 +342,15 @@ class SymbolTable:
         return False
         
     def __getitem__(self, key):
+        self.logger.debug("Searching for symbol '{}'".format(key))
         if key in self.__table.keys():
             return_value = self.__table[key].value
             self.logger.debug("For symbol '{}' found: '{}'".format(key, str(return_value)))
             return return_value
         if self.__parent_table:
+            self.logger.debug("Searching in parent for symbol '{}'".format(key))
             return_value = self.__parent_table[key]
-            self.logger.debug("For symbol '{}' found: '{}'".format(key, str(return_value)))
+            self.logger.debug("For symbol '{}' in parent found: '{}'".format(key, str(return_value)))
             return return_value
         
         raise SymbolUnknownError(key)
@@ -358,7 +361,7 @@ class SymbolTable:
             self.logger.debug("Set symbol '{}' to: '{}'".format(key, str(value)))
         elif self.__parent_table:
             self.__parent_table[key] = value
-            self.logger.debug("Set symbol '{}' to: '{}'".format(key, str(value)))
+            self.logger.debug("Set symbol '{}' in parent to: '{}'".format(key, str(value)))
         else:
             raise SymbolUnknownError(key)
         
@@ -391,9 +394,12 @@ class SymbolTableChain:
         return False
     
     def __getitem__(self, symbol_name):
+        self.logger.debug("Searching chain for symbol '{}'".format(symbol_name))
         for table in self.__chain:
             if symbol_name in table:
-                return table[symbol_name]
+                return_value = table[symbol_name]
+                self.logger.debug("For symbol '{}' found: '{}'".format(key, str(return_value)))
+                return return_value
                  
         raise SymbolUnknownError(symbol_name)
     
@@ -401,6 +407,7 @@ class SymbolTableChain:
         for table in self.__chain:
             if symbol_name in table:
                 table[symbol_name] = symbol_value
+                self.logger.debug("Set symbol '{}' in chain to: '{}'".format(symbol_name, str(symbol_value)))
                 return
                  
         raise SymbolUnknownError(symbol_name)
@@ -445,10 +452,11 @@ class SymbolTableStack:
         return False
         
     def __getitem__(self, symbol_name):
+        self.logger.debug("Searching stack for symbol '{}'".format(symbol_name))
         for table in self.__stack:
             if symbol_name in table:
                 return_value = table[symbol_name]
-                self.logger.debug("For symbol '{}' found: '{}'".format(symbol_name, str(return_value)))
+                self.logger.debug("For symbol '{}' in stack found: '{}'".format(symbol_name, str(return_value)))
                 return return_value
                  
         raise SymbolUnknownError(symbol_name)
@@ -456,7 +464,7 @@ class SymbolTableStack:
     def __setitem__(self, symbol_name, symbol_value):
         for table in self.__stack:
             if symbol_name in table:
-                self.logger.debug("Set symbol '{}' to: '{}'".format(symbol_name, str(symbol_value)))
+                self.logger.debug("Set symbol '{}' in stack to: '{}'".format(symbol_name, str(symbol_value)))
                 table[symbol_name] = symbol_value
                 return
                  

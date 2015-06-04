@@ -15,6 +15,8 @@ class ObjectDefinition:
     def __init__(self, superobj, *, typeobj=None, name=''):
         self.logger = get_logger(self)
         
+        self.logger.debug("superobj={}, typeobj={}, name={}".format(str(superobj), str(typeobj), name))
+        
         self.__typeobj = typeobj
         self.__name = name
         self.__selfobj = self
@@ -39,6 +41,7 @@ class ObjectDefinition:
         
     def set_typeobj(self, typeobj):
         self.__typeobj = typeobj
+        self.logger.debug("Set typeobj of '{}' to: '{}'".format(self, str(self.__typeobj)))
         
     def set_selfobj(self, selfobj):
         self.__selfobj = selfobj
