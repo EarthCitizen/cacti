@@ -72,14 +72,7 @@ def binary_operation_action(s, loc, toks):
     return _add_source_line(s, loc, expr)
 
 def call_property_operation_action(s, loc, toks):
-    # operands = toks[0]
-    # def list_reduction(a, b):
-    #     if isinstance(b, str):
-    #         return ast.PropertyExpression(a, b)
-    #     else:
-    #         return ast.OperationExpression(a, '()', *b)
-    # return reduce(list_reduction, operands)
-    return _process_prop_call_expr(toks[0])
+    return _add_source_line(s, loc, _process_prop_call_expr(toks[0]))
     
 operators = [
     ((property_operator ^ call_operator), 1, opAssoc.LEFT, call_property_operation_action),

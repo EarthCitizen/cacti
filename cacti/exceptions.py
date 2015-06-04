@@ -21,7 +21,14 @@ class OperationNotSupportedError(ExecutionError):
         
 class FatalError(Exception):
     def __init__(self, cause, source):
-        super().__init__("{} at: {}".format(cause.__class__.__name__, source))
+        cause_class_name = cause.__class__.__name__
+        source_ref = source.strip()
+        cause_message = str(cause)
+        if 0 == len(cause_message):
+            error_message = "{} at: {}".format(cause_class_name, source_ref)
+        else:
+            error_message = "{}({}) at: {}".format(cause_class_name, cause_message, source_ref)
+        super().__init__(error_message)
 
 class SymbolError(ExecutionError): pass
 
