@@ -173,7 +173,7 @@ def _init_object_def_from_class_def(object_def, class_def):
         object_def.add_property(prop_def)
         
     call_env = CallEnv(object_def, 'self')
-    call_env.symbol_stack.push(object_def.private_table)
+    call_env.symbol_stack.push(object_def.field_table)
     push_call_env(call_env)
     
     # Initialize constants

@@ -51,6 +51,10 @@ class ObjectDefinition:
             self.__superobj.set_selfobj(self)
     
     @property
+    def field_table(self):
+        return self.__field_table
+    
+    @property
     def public_table(self):
         return self.__public_table
         
