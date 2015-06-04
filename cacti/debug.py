@@ -19,16 +19,8 @@ def configure_logging():
         return record
     logging.setLogRecordFactory(record_factory)
 
-
-class _CallEnvAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        #self.extra['foo'] = 123
-        print(">>" + str(self.extra))
-        return super().process("FOO:" + msg, kwargs)
-
 def get_logger(o):
     return logging.getLogger(o.__module__ + '.' + o.__class__.__name__)
-    #return _CallEnvAdapter(logger, {'foo': 123})
 
 def print_stack_trace():
     for line in traceback.format_stack():
