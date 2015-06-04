@@ -1,4 +1,16 @@
 class X {
+	var something = 555
+	
+	var x = 100000000000000000000000
+	
+	var c = closure() {something + x}
+	
+	method get_c() {self.c}
+	
+	method foo(value) {
+		self.something = value
+	}
+	
 	method get_self_id() {
 		self.id
 	}
@@ -12,18 +24,32 @@ class X {
 		super
 	}
 	method get_five() { var x = 5; x }
+	
+	method print_super_as_string() {
+		print(super.string)
+	}
+	
+	method get_clos_print_super_as_string() {
+		closure() {print(super.string)}
+	}
 };
 
 var d = X()
 
-#print("GET_SELF_ID: " + d.get_self_id().string)
-#print("GET_SELF_ID2: " + d.get_self_id().string)
-#print("GET_SELF_CLOS: " + d.get_self_clos()().string)
-#print("GET_SELF_CLOS2: " + d.get_self_clos()().string)
-#print("GET_SUPER_ID: " + d.get_super_id().string)
-var s = d.get_super()
-log_debug()
-s.string
-log_info()
-print(s)
-print(s.string)
+#print(d.get_self_id())
+#print(d.get_super_id())
+
+#d + d
+
+#print(d.string)
+
+#d.print_super_as_string()
+
+#print(d.get_super().string)
+
+#d.get_clos_print_super_as_string()()
+
+#print(d.set_something(123))
+#print(d.foo("123"))
+
+print(d.get_c()().string)

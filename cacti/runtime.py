@@ -90,12 +90,19 @@ class MethodBinding(_Call):
         self.__method_def = method_def
         
     def call(self, *params):
+        prev_call_env = peek_call_env()
+        
+        if prev_call_env and (prev_call_env.owner.superobj is self.__owner):
+            selfobj = prev_call_env.owner
+        else:
+            selfobj = self.__owner
+        
         call_env = CallEnv(self.__owner, self.__method_def.name)
         push_call_env(call_env)
         super_self = call_env.symbol_stack.peek()
         
-        self.logger.debug('Adding self: ' + str(self.__owner.selfobj))
-        super_self.add_symbol('self', ConstantValueHolder(self.__owner.selfobj))
+        self.logger.debug('Adding self: ' + str(selfobj))
+        super_self.add_symbol('self', ConstantValueHolder(selfobj))
         
         self.logger.debug('Adding super: ' + str(self.__owner.superobj))
         super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
@@ -137,6 +144,8 @@ def push_call_env(call_env):
     CALL_ENV_STACK.appendleft(call_env)
     
 def peek_call_env(pos=0):
+    if len(CALL_ENV_STACK) < (pos + 1):
+        return None
     call_env = CALL_ENV_STACK[pos]
     if __debug_stack:
         __stack_info("::-PEEK({}): ".format(lvl-1), call_env)
@@ -152,10 +161,11 @@ def pop_call_env():
     return popped
 
 class CallEnv:
-    def __init__(self, owner, name):
+    def __init__(self, owner, name, selfobj=None):
         from cacti.builtin import get_builtin_table
         self.__owner = owner
         self.__name = name
+        self.__selfobj = selfobj
         self.__symbol_stack = SymbolTableStack()
         self.__symbol_stack.push(get_builtin_table())
         self.__symbol_stack.push(SymbolTable())
@@ -171,9 +181,13 @@ class CallEnv:
     @property
     def name(self):
         return self.__name
+        
+    @property
+    def selfobj(self):
+        return self.__selfobj
     
     def __copy__(self):
-        inst_copy = self.__class__(self.__owner, self.__name)
+        inst_copy = self.__class__(self.__owner, self.__name, self.__selfobj)
         inst_copy.__symbol_stack = copy.copy(self.__symbol_stack)
         return inst_copy
         
@@ -181,12 +195,14 @@ class CallEnv:
         return str(self)
         
     def __str__(self):
-        return "{} {}({})<{}>({})".format(
-            self.__class__.__name__,
-            self.__owner.__class__.__name__,
-            id(self.__owner),
-            self.__name,
-            str(self.__symbol_stack))
+        kwargs = {
+            'class_name': self.__class__.__name__,
+            'owner_class_name': self.__owner.__class__.__name__,
+            'id': id(self.__owner),
+            'name': self.__name,
+            'stack': str(self.__symbol_stack)
+            }
+        return "{class_name} {owner_class_name}({id})<{name}>({stack})".format(**kwargs)
 
 class ValueHolder:
     def __init__(self, value):

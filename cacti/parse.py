@@ -10,6 +10,18 @@ import cacti.ast as ast
 
 __all__ = ['parse_file', 'parse_string']
 
+def _add_source_line(s, loc, expr):
+    expr.source = line(loc, s)
+    return expr
+
+def _process_prop_call_expr(operands):
+    def list_reduction(a, b):
+        if isinstance(b, str):
+            return ast.PropertyExpression(a, b)
+        else:
+            return ast.OperationExpression(a, '()', *b)
+    return reduce(list_reduction, operands)
+
 open_curl = Literal("{").suppress()
 close_curl = Literal("}").suppress()
 open_paren = Literal("(").suppress()
@@ -36,17 +48,17 @@ identifier = Word('_' + alphas, bodyChars='_' + alphanums)
 
 reference = identifier.copy()
 def reference_action(s, loc, toks):
-    return ast.ReferenceExpression(toks[0])
+    return _add_source_line(s, loc, ast.ReferenceExpression(toks[0]))
 reference.setParseAction(reference_action)
 
 integer = Word(nums).setResultsName('value')
 def integer_action(s, loc, toks):
-    return ast.ValueExpression(bltn.make_integer(int(toks.value)))
+    return _add_source_line(s, loc, ast.ValueExpression(bltn.make_integer(int(toks.value))))
 integer.setParseAction(integer_action)
 
 string = QuotedString('"', escChar='\\').setResultsName('value')
 def string_action(s, loc, toks):
-    return ast.ValueExpression(bltn.make_string(str(toks.value)))
+    return _add_source_line(s, loc, ast.ValueExpression(bltn.make_string(str(toks.value))))
 string.setParseAction(string_action)
 
 call_operator = open_paren + Group(Optional(delimitedList(value))) + close_paren
@@ -57,16 +69,17 @@ def binary_operation_action(s, loc, toks):
     operation = toks[0][1]
     operands = toks[0][0::2]
     expr = reduce(lambda o1, o2: ast.OperationExpression(o1, operation, o2), operands)
-    return expr
+    return _add_source_line(s, loc, expr)
 
 def call_property_operation_action(s, loc, toks):
-    operands = toks[0]
-    def list_reduction(a, b):
-        if isinstance(b, str):
-            return ast.PropertyExpression(a, b)
-        else:
-            return ast.OperationExpression(a, '()', *b)
-    return reduce(list_reduction, operands)
+    # operands = toks[0]
+    # def list_reduction(a, b):
+    #     if isinstance(b, str):
+    #         return ast.PropertyExpression(a, b)
+    #     else:
+    #         return ast.OperationExpression(a, '()', *b)
+    # return reduce(list_reduction, operands)
+    return _process_prop_call_expr(toks[0])
     
 operators = [
     ((property_operator ^ call_operator), 1, opAssoc.LEFT, call_property_operation_action),
@@ -86,7 +99,7 @@ value_statement = value + statement_end
 
 val_statement = keyword_val + identifier + assignment_operator + value + statement_end
 def val_statement_action(s, loc, toks):
-    return ast.ValDeclarationStatement(toks[0], toks[1])
+    return _add_source_line(s, loc, ast.ValDeclarationStatement(toks[0], toks[1]))
 val_statement.setParseAction(val_statement_action)
 
 ### VAR
@@ -94,9 +107,11 @@ val_statement.setParseAction(val_statement_action)
 def var_statement_action(s, loc, toks):
     symbol = toks[0]
     if len(toks) == 2:
-        return ast.VarDeclarationStatement(symbol, toks[1])
+        return_value = ast.VarDeclarationStatement(symbol, toks[1])
     else:
-        return ast.VarDeclarationStatement(symbol, ast.ReferenceExpression('nothing'))
+        return_value = ast.VarDeclarationStatement(symbol, ast.ReferenceExpression('nothing'))
+        
+    return _add_source_line(s, loc, return_value)
 
 var_assign = keyword_var + identifier + assignment_operator + value
 var_no_assign = keyword_var + identifier
@@ -106,16 +121,37 @@ var_statement.setParseAction(var_statement_action)
 
 ### ASSIGNMENT
 
-assignment_statement = identifier + assignment_operator + value + statement_end
+assign_to_operators = [
+    ((property_operator ^ call_operator), 1, opAssoc.LEFT)
+]
+
+assign_to_operand = (identifier)
+
+assign_to = infixNotation(assign_to_operand, assign_to_operators)
+
+assignment_statement = assign_to + assignment_operator + value + statement_end
 def assignment_statement_action(s, loc, toks):
-    return ast.AssignmentStatement(toks[0], toks[1])
+    assign_target_tokens = toks[0]
+    if 1 == len(assign_target_tokens):
+        assign_id = assign_target_tokens[0]
+        assign_target_expr = None
+    else:
+        assign_id = assign_target_tokens[-1]
+        assign_target_tokens[0] = ast.ReferenceExpression(assign_target_tokens[0])
+        assign_target_expr = _process_prop_call_expr(assign_target_tokens[:-1])
+        
+    if not isinstance(assign_id, str):
+        raise SyntaxError('No assignment identifier for assignment target expression: ' + s)
+        
+    return _add_source_line(s, loc, ast.AssignmentStatement(assign_id, toks[1], assign_target_expr))
 assignment_statement.setParseAction(assignment_statement_action)
 
 ### CLOSURE
 
 closure <<= keyword_closure + open_paren + Group(Optional(delimitedList(identifier))) + close_paren + open_curl + block + close_curl
 def closure_action(s, loc, toks):
-    return ast.ClosureDeclarationStatement(toks[1], *toks[0])
+    return _add_source_line(s, loc, ast.ClosureDeclarationStatement(toks[1], *toks[0]))
+    return_value.source = line(loc, s)
 closure.setParseAction(closure_action)
 closure_statement = closure + statement_end
 
@@ -126,7 +162,7 @@ function <<= keyword_function + \
                 open_paren + Group(Optional(delimitedList(identifier))) + close_paren + \
                 open_curl + block + close_curl
 def function_action(s, loc, toks):
-    return ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1])
+    return _add_source_line(s, loc, ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1]))
 function.setParseAction(function_action)
 function_statement = function + statement_end
 
@@ -136,7 +172,7 @@ method = keyword_method + identifier + \
                 open_paren + Group(Optional(delimitedList(identifier))) + close_paren + \
                 open_curl + block + close_curl
 def method_action(s, loc, toks):
-    return ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1])
+    return _add_source_line(s, loc, ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1]))
 method.setParseAction(method_action)
 
 method_statment = method + statement_end
@@ -159,7 +195,7 @@ klass_content_statement = (method_statment | klass_val_statement | klass_var_sta
 
 klass <<= keyword_class + identifier + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
 def klass_action(s, loc, toks):
-    return ast.ClassDeclarationStatement(toks[0], *toks[1])
+    return _add_source_line(s, loc, ast.ClassDeclarationStatement(toks[0], *toks[1]))
 klass.setParseAction(klass_action)
 klass_statement = klass + statement_end
 

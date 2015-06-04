@@ -1,13 +1,41 @@
-val x = function (d) {
-    var x = 15
-    function inner() {
-        function inner() { print("Inner Inner") }
-        print("This is inner")
-        inner()
+class X {
+    var x
+    
+    val clos = closure () {
+        "My x is: " + self.string
     }
-    print(d + x)
-    inner()
+    
+    val klass = class F {}
+    
+    method get_klass() {self.klass}
+    
+    method set_klass(value) {self.klass = value}
+    
+    method get_clos() { self.clos }
+    
+    method set_x(value) {
+        self.x = value
+    }
+    
+    method get_x() { self.x }
+    
+    method set_x_with_clos(value) {
+        closure () { self.x = value }
+    }
+    
+    method my_self() { self }
 }
-x(10)
 
-var d = 3
+var d = X()
+
+print(d.get_x())
+d.set_x(123)
+print(d.get_x())
+d.set_x("Hello World!")
+print(d.get_x())
+d.set_x_with_clos(999)()
+print(d.get_x())
+print(d.get_clos())
+print(d.get_clos()())
+print(d.get_klass())
+d.set_klass(1)

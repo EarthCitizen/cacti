@@ -172,6 +172,10 @@ def _init_object_def_from_class_def(object_def, class_def):
     for prop_def in class_def.property_definitions:
         object_def.add_property(prop_def)
         
+    call_env = CallEnv(object_def, 'self')
+    call_env.symbol_stack.push(object_def.private_table)
+    push_call_env(call_env)
+    
     # Initialize constants
     for val_def in class_def.val_definitions:
         object_def.add_val(val_def.name, val_def.init_expr())
@@ -179,6 +183,8 @@ def _init_object_def_from_class_def(object_def, class_def):
     # Initialize vars after constants
     for var_def in class_def.var_definitions:
         object_def.add_var(var_def.name, var_def.init_expr())
+        
+    pop_call_env()
         
     object_def.set_typeobj(class_def)
 

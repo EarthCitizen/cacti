@@ -1,3 +1,5 @@
+import sys
+import cacti.exceptions as ce
 from cacti.runtime import *
 from cacti.lang import *
 from cacti.builtin import make_class, make_object
@@ -10,10 +12,32 @@ __all__ = [
 
 class Evaluable:
     def __call__(self):
-        return self.eval()
+        error = None
+        try:
+            return self.eval()
+        except ce.ExecutionError as err:
+            error = err
+        
+        if error:
+            raise ce.FatalError(error, self.source)
     
     def eval(self):
         pass
+    
+    def __getattr__(self, name):
+        if name == 'source':
+            if name in self.__dict__:
+                return self.__dict__[name]
+            else:
+                return ''
+        else:
+            super().__getattr__(name)
+    
+    def __setattr__(self, name, value):
+        if name == 'source':
+            self.__dict__[name] = value
+        else:
+            super().__setattr__(name, value)
     
 class OperationExpression(Evaluable):
     def __init__(self, operand_expr, operation, *operation_expr_params):
@@ -74,18 +98,28 @@ class ValueExpression(Evaluable):
         return "{}({})".format(self.__class__.__name__, repr(self.__value))
         
 class AssignmentStatement(Evaluable):
-    def __init__(self, symbol, expr):
+    def __init__(self, symbol, value_expr, target_expr=None):
+        self.__target_expr = target_expr
         self.__symbol = symbol
-        self.__expr = expr
+        self.__value_expr = value_expr
         
     def eval(self):
-        value = self.__expr()
-        table = peek_call_env().symbol_stack.peek()
-        table[self.__symbol] = value
+        value = self.__value_expr()
+        if self.__target_expr:
+            target = self.__target_expr()
+        else:
+            target = peek_call_env().symbol_stack.peek()
+        target[self.__symbol] = value
         return value
         
     def __repr__(self):
-        return "{}('{}', {})".format(self.__class__.__name__, self.__symbol, repr(self.__expr))
+        kwargs = {
+            'class_name': self.__class__.__name__,
+            'symbol': self.__symbol,
+            'value_expr': repr(self.__value_expr),
+            'target_expr': repr(self.__target_expr)
+        }
+        return "{class_name}('{symbol}', {value_expr}, {target_expr})".format(**kwargs)
     
 class ClassDeclarationStatement(Evaluable):
     def __init__(self, name, *parts):

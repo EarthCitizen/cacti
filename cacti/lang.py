@@ -3,7 +3,11 @@ from cacti.debug import get_logger
 from cacti.runtime import *
 from cacti.exceptions import *
 
-__all__ = ['ClassDefinition', 'Closure', 'Function', 'Method', 'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition']
+__all__ = [
+    'ClassDefinition', 'Closure', 'Function', 'Method',
+    'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition',
+    'ValDefinition', 'VarDefinition'
+]
            
 
 # All ObjectDefinition Instances Have This
@@ -123,9 +127,6 @@ class ObjectDefinition:
     
     def __getitem__(self, symbol_name):
         petitioner = peek_call_env().owner
-        if 'id' == symbol_name:
-            print('ID OWNER: ' + str(peek_call_env().owner))
-            print('WILL GO TO GET ID NOW')
         return self.__public_or_private_table(petitioner)[symbol_name]
     
     def __setitem__(self, symbol_name, symbol_value):
@@ -243,7 +244,7 @@ class ClassDefinition(TypeDefinition):
         self.__val_defs += [val_def]
         
     def add_var_definition(self, var_def):
-        self.__var_def += [var_def]
+        self.__var_defs += [var_def]
         
     def add_method_definition(self, method_def):
         self.__method_defs += [method_def]
@@ -286,6 +287,19 @@ class PropertyDefinition:
         return self.__setter_method_def
         
 class ValDefinition:
+    def __init__(self, val_name, val_init_expr):
+        self.__val_name = val_name
+        self.__val_init_expr = val_init_expr
+        
+    @property
+    def name(self):
+        return self.__val_name
+        
+    @property
+    def init_expr(self):
+        return self.__val_init_expr
+
+class VarDefinition:
     def __init__(self, val_name, val_init_expr):
         self.__val_name = val_name
         self.__val_init_expr = val_init_expr
