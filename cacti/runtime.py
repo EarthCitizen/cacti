@@ -398,7 +398,7 @@ class SymbolTableChain:
         for table in self.__chain:
             if symbol_name in table:
                 return_value = table[symbol_name]
-                self.logger.debug("For symbol '{}' found: '{}'".format(key, str(return_value)))
+                self.logger.debug("For symbol '{}' found: '{}'".format(symbol_name, str(return_value)))
                 return return_value
                  
         raise SymbolUnknownError(symbol_name)
