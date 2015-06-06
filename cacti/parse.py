@@ -61,6 +61,8 @@ def super_action(s, loc, toks):
         #raise excp.SyntaxError(s, loc, "Invalid use of 'super'")
         # pyparsing is swallowing custom exceptions
         raise SyntaxError("Invalid use of 'super'")
+    toks[0] = ast.ReferenceExpression(toks[0])
+    return _add_source_line(s, loc, _process_prop_call_expr(toks))
 super.setParseAction(super_action)
 
 reference = identifier.copy()
