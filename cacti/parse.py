@@ -144,7 +144,6 @@ assignment_statement.setParseAction(assignment_statement_action)
 closure <<= keyword_closure + open_paren + Group(Optional(delimitedList(identifier))) + close_paren + open_curl + block + close_curl
 def closure_action(s, loc, toks):
     return _add_source_line(s, loc, ast.ClosureDeclarationStatement(toks[1], *toks[0]))
-    return_value.source = line(loc, s)
 closure.setParseAction(closure_action)
 closure_statement = closure + statement_end
 
