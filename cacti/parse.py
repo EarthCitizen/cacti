@@ -34,9 +34,9 @@ keyword_method = Keyword('method').suppress()
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
 assignment_operator = Literal("=").suppress()
-statement_end = (LineEnd().suppress() | Literal(";").suppress() | StringEnd().suppress() | FollowedBy(Literal('}')))
-
 comment = (Literal('#') + restOfLine).suppress()
+statement_end = (LineEnd().suppress() | Literal(";").suppress() | StringEnd().suppress() | comment | FollowedBy(Literal('}')))
+
 
 block = Forward()
 closure = Forward()
