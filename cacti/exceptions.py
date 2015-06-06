@@ -38,4 +38,15 @@ class SymbolUnknownError(SymbolError):
     def __init__(self, symbol_name):
         super().__init__("Unknown symbol '{}'".format(symbol_name))
         
-class SyntaxError(Exception): pass
+class SyntaxError(Exception):
+    def __init__(self, s, loc, message):
+        from pyparsing import col, line, lineno
+        kwargs = {
+            'message': message,
+            'line': str(lineno(loc, s)),
+            'column': str(col(loc, s)),
+            'source': line(loc, s).strip()
+        }
+        m = '{}: {}:{}: {}'.format(**kwargs)
+        super().__init__(m)
+        

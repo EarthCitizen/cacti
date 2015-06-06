@@ -7,8 +7,12 @@ import cacti.runtime as rntm
 import cacti.lang as lang
 import cacti.builtin as bltn
 import cacti.ast as ast
+import cacti.exceptions as excp
 
 __all__ = ['parse_file', 'parse_string']
+
+def _get_source_info(s, loc):
+    return '{}:{}: {}'.format(str(lineno(loc, s)), str(col(loc, s)), line(loc, s).strip())
 
 def _add_source_line(s, loc, expr):
     expr.source = line(loc, s)
@@ -22,29 +26,42 @@ def _process_prop_call_expr(operands):
             return ast.OperationExpression(a, '()', *b)
     return reduce(list_reduction, operands)
 
-open_curl = Literal("{").suppress()
-close_curl = Literal("}").suppress()
-open_paren = Literal("(").suppress()
-close_paren = Literal(")").suppress()
-
-keyword_class = Keyword('class').suppress()
-keyword_closure = Keyword('closure').suppress()
-keyword_function = Keyword('function').suppress()
-keyword_method = Keyword('method').suppress()
-keyword_var = Keyword('var').suppress()
-keyword_val = Keyword('val').suppress()
-assignment_operator = Literal("=").suppress()
-comment = (Literal('#') + restOfLine).suppress()
-statement_end = (LineEnd().suppress() | Literal(";").suppress() | StringEnd().suppress() | comment | FollowedBy(Literal('}')))
-
+identifier = Word('_' + alphas, bodyChars='_' + alphanums)
 
 block = Forward()
 closure = Forward()
 function = Forward()
 klass = Forward()
 value = Forward()
+super = Forward()
 
-identifier = Word('_' + alphas, bodyChars='_' + alphanums)
+open_curl = Literal("{").suppress()
+close_curl = Literal("}").suppress()
+open_paren = Literal("(").suppress()
+close_paren = Literal(")").suppress()
+optional_param_names = Group(Optional(delimitedList(identifier)))
+optional_param_values = Group(Optional(delimitedList(value)))
+
+keyword_class = Keyword('class').suppress()
+keyword_closure = Keyword('closure').suppress()
+keyword_function = Keyword('function').suppress()
+keyword_method = Keyword('method').suppress()
+keyword_super = Keyword('super')
+keyword_var = Keyword('var').suppress()
+keyword_val = Keyword('val').suppress()
+assignment_operator = Literal("=").suppress()
+call_operator = open_paren + optional_param_values + close_paren
+property_operator = Literal('.').suppress() + identifier
+comment = (Literal('#') + restOfLine).suppress()
+statement_end = (LineEnd().suppress() | Literal(";").suppress() | StringEnd().suppress() | comment | FollowedBy(Literal('}')))
+
+super = keyword_super + Optional(call_operator | property_operator)
+def super_action(s, loc, toks):
+    if 1 == len(toks):
+        #raise excp.SyntaxError(s, loc, "Invalid use of 'super'")
+        # pyparsing is swallowing custom exceptions
+        raise SyntaxError("Invalid use of 'super'")
+super.setParseAction(super_action)
 
 reference = identifier.copy()
 def reference_action(s, loc, toks):
@@ -61,9 +78,7 @@ def string_action(s, loc, toks):
     return _add_source_line(s, loc, ast.ValueExpression(bltn.make_string(str(toks.value))))
 string.setParseAction(string_action)
 
-call_operator = open_paren + Group(Optional(delimitedList(value))) + close_paren
 
-property_operator = Literal('.').suppress() + identifier
 
 def binary_operation_action(s, loc, toks):
     operation = toks[0][1]
@@ -82,7 +97,7 @@ operators = [
     ("-", 2, opAssoc.LEFT, binary_operation_action)
 ]
 
-operand = (reference | integer | string)
+operand = (super | reference | integer | string)
 
 value <<= (infixNotation(operand, operators) ^ closure ^ function ^ klass)
 
@@ -134,7 +149,7 @@ def assignment_statement_action(s, loc, toks):
         assign_target_expr = _process_prop_call_expr(assign_target_tokens[:-1])
         
     if not isinstance(assign_id, str):
-        raise SyntaxError('No assignment identifier for assignment target expression: ' + s)
+        raise SyntaxError(s, loc, 'No identifier for assignment target expression')
         
     return _add_source_line(s, loc, ast.AssignmentStatement(assign_id, toks[1], assign_target_expr))
 assignment_statement.setParseAction(assignment_statement_action)
@@ -161,7 +176,7 @@ function_statement = function + statement_end
 ### CLASS
 
 method = keyword_method + identifier + \
-                open_paren + Group(Optional(delimitedList(identifier))) + close_paren + \
+                open_paren + optional_param_names + close_paren + \
                 open_curl + block + close_curl
 def method_action(s, loc, toks):
     return _add_source_line(s, loc, ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1]))
