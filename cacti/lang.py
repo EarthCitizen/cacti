@@ -157,12 +157,14 @@ class ObjectDefinition:
     def to_string(self):
         from cacti.builtin import make_string
         
-        if (self.typeobj is None):
-            ret_val = '<UNKNOWN><{}>'.format(id(self))
-        elif (self.name is None) or ('' == self.name):
-            ret_val = '{}<{}>'.format(self.typeobj.name, id(self))
+        selfobj = self.selfobj
+        
+        if (selfobj.typeobj is None):
+            ret_val = '<UNKNOWN><{}>'.format(id(selfobj))
+        elif (selfobj.name is None) or ('' == selfobj.name):
+            ret_val = '{}<{}>'.format(selfobj.typeobj.name, id(selfobj))
         else:
-            ret_val = "{}<'{}'>".format(self.typeobj.name, self.name)
+            ret_val = "{}<'{}'>".format(selfobj.typeobj.name, selfobj.name)
         
         return ret_val
 

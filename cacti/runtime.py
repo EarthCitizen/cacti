@@ -97,6 +97,8 @@ class MethodBinding(_Call):
         selfobj = self.__owner.selfobj
         superobj = self.__owner.superobj
         
+        self.logger.debug('Owner: {}'.format(str(self.__owner)))
+        
         self.logger.debug('Adding self: ' + str(selfobj))
         super_self.add_symbol('self', ConstantValueHolder(selfobj))
         
