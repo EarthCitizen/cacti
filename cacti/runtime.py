@@ -90,8 +90,10 @@ class MethodBinding(_Call):
         self.__method_def = method_def
         
     def call(self, *params):
+        self.logger.debug('Start method call')
         call_env = CallEnv(self.__owner, self.__method_def.name)
         push_call_env(call_env)
+        self.logger.debug('Pushed new call env')
         super_self = call_env.symbol_stack.peek()
         
         selfobj = self.__owner.selfobj

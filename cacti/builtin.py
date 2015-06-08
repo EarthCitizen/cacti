@@ -12,7 +12,10 @@ __all__ = [
 ]
 
 def make_object():
+    logger = get_logger(make_object)
+    logger.debug('Start')
     obj = get_builtin('Object').hook_table['()'].call()
+    logger.debug('Returning: ' + str(obj))
     return obj
 
 def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, method_defs=None):

@@ -1,0 +1,7 @@
+class X {
+	method hello() {}
+}
+
+var d = X()
+log_debug()
+d.hello()

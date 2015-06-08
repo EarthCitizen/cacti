@@ -149,15 +149,16 @@ class ObjectDefinition:
         return str(self)
     
     def __str__(self):
-        return self.to_string()
+        return self.to_string_multi(self)
     
     # This is a workaround to the fact that
     # str() will not call the __str__() that
     # is dynamically added to an object instance
     def to_string(self):
+        return self.to_string_multi(self.selfobj)
+    
+    def to_string_multi(self, selfobj):
         from cacti.builtin import make_string
-        
-        selfobj = self.selfobj
         
         if (selfobj.typeobj is None):
             ret_val = '<UNKNOWN><{}>'.format(id(selfobj))
@@ -187,9 +188,9 @@ class Function(ObjectDefinition):
     def __init__(self, function_name, function_callable):
         assert isinstance(function_callable, Callable)
         
-        from cacti.builtin import get_builtin, get_type
+        from cacti.builtin import get_type, make_object
         binding = FunctionBinding(self, function_name, function_callable)
-        superobj = get_builtin('Object').hook_table['()'].call()
+        superobj = make_object()
         super().__init__(superobj, typeobj=get_type('Function'), name=function_name)
         self.add_hook(MethodDefinition('()', binding))
         
@@ -198,11 +199,17 @@ class Method(ObjectDefinition):
         assert isinstance(method_owner, ObjectDefinition)
         assert isinstance(method_def, MethodDefinition)
         
-        from cacti.builtin import get_builtin, get_type
+        self.logger = get_logger(self)
+        
+        self.logger.debug("Create new method: owner={} name={}".format(str(method_owner), str(method_def.name)))
+        
+        from cacti.builtin import get_type, make_object
         binding = MethodBinding(method_owner, method_def)
-        superobj = get_builtin('Object').hook_table['()'].call()
+        superobj = make_object()
         super().__init__(superobj, typeobj=get_type('Method'), name=method_def.name)
         self.add_hook(MethodDefinition('()', binding))
+        
+        self.logger.debug("Completed new method: owner={} name={}".format(str(method_owner), str(method_def.name)))
         
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
