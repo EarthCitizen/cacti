@@ -1,1 +1,1 @@
-python3 cacti/main.py examples/$1
+PYTHONPATH=. python3 run.py examples/$1
