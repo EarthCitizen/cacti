@@ -32,7 +32,9 @@ class ObjectDefinition:
         parent_property_table = superobj.property_table if superobj else None
         self.__property_table = SymbolTable(parent_table=parent_property_table)
         
-        self.__property_table.add_symbol('id', PropertyGetValueHolder(lambda: id(self)))
+        from cacti.builtin import make_integer
+        
+        self.__property_table.add_symbol('id', PropertyGetValueHolder(lambda: make_integer(id(self))))
         self.__property_table.add_symbol('type', PropertyGetValueHolder(lambda: self.typeobj))
         
         self.__public_table = self.__property_table
