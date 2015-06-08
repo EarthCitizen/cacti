@@ -232,6 +232,7 @@ class ValueHolder:
         return self.__class__.__name__ + "(" + str(self.value) + ")"
     
     value = property(get_value, set_value)
+    
 
 
 class ConstantValueHolder(ValueHolder):
@@ -239,7 +240,7 @@ class ConstantValueHolder(ValueHolder):
         raise ConstantValueError()
     
     value = property(ValueHolder.get_value, set_value)
-    
+
 class PropertyGetSetValueHolder(ValueHolder):
     def __init__(self, getter, setter):
         self.logger = get_logger(self)
@@ -249,13 +250,13 @@ class PropertyGetSetValueHolder(ValueHolder):
         self.__set = setter
     
     def get_value(self):
-        return_value = self.__get.call()
+        return_value = self.__get()
         self.logger.debug('Get: ' + str(return_value))
         return return_value
     
     def set_value(self, value):
         self.logger.debug('Set: ' + str(value))
-        self.__set.call(value)
+        self.__set(value)
         
     def __copy__(self):
         return self
@@ -269,7 +270,7 @@ class PropertyGetValueHolder(ConstantValueHolder):
         self.__get = getter
     
     def get_value(self):
-        return_value = self.__get.call()
+        return_value = self.__get()
         self.logger.debug('Returning: ' + str(return_value))
         return return_value
     

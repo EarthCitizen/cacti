@@ -32,6 +32,9 @@ class ObjectDefinition:
         parent_property_table = superobj.property_table if superobj else None
         self.__property_table = SymbolTable(parent_table=parent_property_table)
         
+        self.__property_table.add_symbol('id', PropertyGetValueHolder(lambda: id(self)))
+        self.__property_table.add_symbol('type', PropertyGetValueHolder(lambda: self.typeobj))
+        
         self.__public_table = self.__property_table
         self.__private_table = SymbolTableChain(self.__property_table, self.__field_table)
         
