@@ -92,20 +92,18 @@ class MethodBinding(_Call):
     def call(self, *params):
         prev_call_env = peek_call_env()
         
-        if prev_call_env and (prev_call_env.owner.superobj is self.__owner):
-            selfobj = prev_call_env.owner
-        else:
-            selfobj = self.__owner
-        
         call_env = CallEnv(self.__owner, self.__method_def.name)
         push_call_env(call_env)
         super_self = call_env.symbol_stack.peek()
         
+        selfobj = self.__owner.selfobj
+        superobj = self.__owner.superobj
+        
         self.logger.debug('Adding self: ' + str(selfobj))
         super_self.add_symbol('self', ConstantValueHolder(selfobj))
         
-        self.logger.debug('Adding super: ' + str(self.__owner.superobj))
-        super_self.add_symbol('super', ConstantValueHolder(self.__owner.superobj))
+        self.logger.debug('Adding super: ' + str(superobj))
+        super_self.add_symbol('super', ConstantValueHolder(superobj))
         
         return_value = self.__method_def.callable.call(*params)
         self.logger.debug('Returning: ' + str(return_value))
