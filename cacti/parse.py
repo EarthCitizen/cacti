@@ -202,9 +202,9 @@ klass_var_statement.setParseAction(klass_var_statement_action)
 
 klass_content_statement = (method_statment | klass_val_statement | klass_var_statement)
 
-klass <<= keyword_class + identifier + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
+klass <<= keyword_class + identifier + Optional(Literal(':').suppress() + identifier, default='Object') + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
 def klass_action(s, loc, toks):
-    return _add_source_line(s, loc, ast.ClassDeclarationStatement(toks[0], *toks[1]))
+    return _add_source_line(s, loc, ast.ClassDeclarationStatement(toks[0], toks[1], *toks[2]))
 klass.setParseAction(klass_action)
 klass_statement = klass + statement_end
 

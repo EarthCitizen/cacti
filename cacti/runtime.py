@@ -90,8 +90,6 @@ class MethodBinding(_Call):
         self.__method_def = method_def
         
     def call(self, *params):
-        prev_call_env = peek_call_env()
-        
         call_env = CallEnv(self.__owner, self.__method_def.name)
         push_call_env(call_env)
         super_self = call_env.symbol_stack.peek()

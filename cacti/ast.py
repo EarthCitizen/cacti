@@ -1,4 +1,6 @@
+import logging
 import sys
+from cacti.debug import get_logger
 import cacti.exceptions as ce
 from cacti.runtime import *
 from cacti.lang import *
@@ -122,12 +124,19 @@ class AssignmentStatement(Evaluable):
         return "{class_name}('{symbol}', {value_expr}, {target_expr})".format(**kwargs)
     
 class ClassDeclarationStatement(Evaluable):
-    def __init__(self, name, *parts):
+    def __init__(self, name, superclass_name, *parts):
+        self.logger = get_logger(self)
+        
         self.__name = name
+        self.__superclass_name = superclass_name
         self.__parts = parts
         
+        self.logger.debug("Create: name={}, superclass_name={}".format(self.__name, self.__superclass_name))
+        
     def eval(self):
-        klass = make_class(self.__name)
+        self.logger.debug("Begin eval")
+        klass = make_class(self.__name, self.__superclass_name)
+        self.logger.debug("Made class: " + str(klass))
         
         for p in self.__parts:
             if isinstance(p, MethodDefinitionDeclarationStatement):
@@ -142,7 +151,7 @@ class ClassDeclarationStatement(Evaluable):
         return klass
     
     def __repr__(self):
-        return "{}({}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__parts))
+        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__superclass_name), repr(self.__parts))
         
 class MethodDefinitionDeclarationStatement(Evaluable):
     def __init__(self, name, content, *params):

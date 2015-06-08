@@ -1,3 +1,4 @@
+import inspect
 import logging
 import traceback
 
@@ -15,12 +16,18 @@ def configure_logging():
         env_info = "{}('{}')".format(call_env.owner.to_string(), call_env.name)
         record.env_info = env_info
         record.file_line = record.filename + ':' + str(record.lineno)
-        record.name_fun = "{}.{}".format(record.name, record.funcName)
+        record.name_fun = "{}:{}".format(record.name, record.funcName)
         return record
     logging.setLogRecordFactory(record_factory)
 
 def get_logger(o):
-    return logging.getLogger(o.__module__ + '.' + o.__class__.__name__)
+    if isinstance(o, str):
+        logger_name = o
+    elif inspect.isfunction(o):
+        logger_name = o.__module__ + '.' + o.__name__
+    else:
+        logger_name = o.__module__ + '.' + o.__class__.__name__
+    return logging.getLogger(logger_name)
 
 def print_stack_trace():
     for line in traceback.format_stack():

@@ -1,5 +1,7 @@
 import operator
 import types
+import logging
+from cacti.debug import get_logger
 from cacti.runtime import *
 from cacti.lang import *
 from cacti.exceptions import *
@@ -13,13 +15,21 @@ def make_object():
     obj = get_builtin('Object').hook_table['()'].call()
     return obj
 
-def make_class(name, superclass='Object', *, val_defs=None, var_defs=None, method_defs=None):
+def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, method_defs=None):
+    logger = get_logger(make_class)
+    logger.debug("name={}, superclass_name={}".format(repr(name), repr(superclass_name)))
     superobj = make_object()
     typeobj = get_type('Class')
-    superclass = get_builtin('Object')
+    call_env = peek_call_env()
+    if call_env and (superclass_name in call_env.symbol_stack):
+        superclass = call_env.symbol_stack[superclass_name]
+    else:
+        superclass = get_builtin(superclass_name)
     classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
     
     classdef.add_hook(MethodDefinition('()', Callable(_hook_new_callable_content)))
+    
+    logger.debug("Returning: {}".format(repr(classdef)))
     
     return classdef   
 
