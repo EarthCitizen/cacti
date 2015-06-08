@@ -145,11 +145,14 @@ class ObjectDefinition:
         petitioner = peek_call_env().owner
         self.__public_or_private_table(petitioner)[symbol_name] = symbol_value
     
-    def __repr__(self):
-        return str(self)
+    #def __repr__(self):
+    #    return str(self)
     
-    def __str__(self):
-        return self.to_string_multi(self)
+    #def __str__(self):
+    #    return self.to_string_multi(self)
+    
+    def to_repr(self):
+        return self.to_string_multi(self.selfobj)
     
     # This is a workaround to the fact that
     # str() will not call the __str__() that
@@ -158,8 +161,6 @@ class ObjectDefinition:
         return self.to_string_multi(self.selfobj)
     
     def to_string_multi(self, selfobj):
-        from cacti.builtin import make_string
-        
         if (selfobj.typeobj is None):
             ret_val = '<UNKNOWN><{}>'.format(id(selfobj))
         elif (selfobj.name is None) or ('' == selfobj.name):

@@ -147,7 +147,7 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_callable=Callable(lambda: make_string(str(peek_call_env().symbol_stack['self'])))),
+                        PropertyDefinition('string', getter_callable=Callable(lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
                     }
             }
     }
@@ -331,8 +331,8 @@ def _make_nothing():
 
 def _make_function_print():
     def fn_print():
-        value = str(peek_call_env().symbol_stack['value'])
-        print(value)
+        value = peek_call_env().symbol_stack['value'].public_table['string']
+        print(value.primitive)
     
     fn_callable = Callable(fn_print, 'value')
         

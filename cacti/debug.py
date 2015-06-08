@@ -13,7 +13,7 @@ def configure_logging():
         from cacti.runtime import peek_call_env
         record = old_factory(*args, **kwargs)
         call_env = peek_call_env()
-        env_info = "{}('{}')".format(call_env.owner.to_string(), call_env.name)
+        env_info = "{}('{}')".format(call_env.owner.to_repr(), call_env.name)
         record.env_info = env_info
         record.file_line = record.filename + ':' + str(record.lineno)
         record.name_fun = "{}:{}".format(record.name, record.funcName)
