@@ -142,8 +142,9 @@ assign_to = infixNotation(assign_to_operand, assign_to_operators)
 assignment_statement = assign_to + assignment_operator + value + statement_end
 def assignment_statement_action(s, loc, toks):
     assign_target_tokens = toks[0]
-    if 1 == len(assign_target_tokens):
-        assign_id = assign_target_tokens[0]
+    # Only one assignment identifier will be a str
+    if isinstance(assign_target_tokens, str):
+        assign_id = assign_target_tokens
         assign_target_expr = None
     else:
         assign_id = assign_target_tokens[-1]
