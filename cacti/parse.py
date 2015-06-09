@@ -40,6 +40,14 @@ close_curl = Literal("}").suppress()
 open_paren = Literal("(").suppress()
 close_paren = Literal(")").suppress()
 optional_param_names = Group(Optional(delimitedList(identifier)))
+def optional_param_names_action(s, loc, toks):
+    param_names = list(toks[0])
+    if param_names:
+        repeat_params = [e for e in [[x, param_names.count(x)] for x in set(param_names)] if e[1] > 1]
+        if repeat_params:
+            m = map(lambda e: "{0}: {1}".format(*e), repeat_params)
+            raise SyntaxError("Repeated parameters: " + ", ".join(sorted(m)))
+optional_param_names.setParseAction(optional_param_names_action)
 optional_param_values = Group(Optional(delimitedList(value)))
 
 keyword_class = Keyword('class').suppress()
@@ -159,7 +167,7 @@ assignment_statement.setParseAction(assignment_statement_action)
 
 ### CLOSURE
 
-closure <<= keyword_closure + open_paren + Group(Optional(delimitedList(identifier))) + close_paren + open_curl + block + close_curl
+closure <<= keyword_closure + open_paren + optional_param_names + close_paren + open_curl + block + close_curl
 def closure_action(s, loc, toks):
     return _add_source_line(s, loc, ast.ClosureDeclarationStatement(toks[1], *toks[0]))
 closure.setParseAction(closure_action)
@@ -169,7 +177,7 @@ closure_statement = closure + statement_end
 
 function <<= keyword_function + \
                 Optional(identifier, default=None) + \
-                open_paren + Group(Optional(delimitedList(identifier))) + close_paren + \
+                open_paren + optional_param_names + close_paren + \
                 open_curl + block + close_curl
 def function_action(s, loc, toks):
     return _add_source_line(s, loc, ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1]))
