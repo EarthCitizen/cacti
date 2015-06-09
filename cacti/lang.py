@@ -208,7 +208,12 @@ class Method(ObjectDefinition):
         binding = MethodBinding(method_owner, method_def)
         superobj = make_object()
         super().__init__(superobj, typeobj=get_type('Method'), name=method_def.name)
-        self.add_hook(MethodDefinition('()', binding))
+        
+        # Method () does not need to be bound to self as there is
+        # no actual code in which it will refer to itself.
+        # Instead it is a delegate for the content of the method
+        # definition which is bound to the method owner
+        self.hook_table.add_symbol('()', ConstantValueHolder(binding))
         
         self.logger.debug("Completed new method: owner={} name={}".format(str(method_owner), str(method_def.name)))
         
