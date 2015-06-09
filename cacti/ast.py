@@ -4,12 +4,12 @@ from cacti.debug import get_logger
 import cacti.exceptions as ce
 from cacti.runtime import *
 from cacti.lang import *
-from cacti.builtin import make_class, make_object
+from cacti.builtin import get_builtin, make_class, make_object
 
 __all__ = [
     'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
     'AssignmentStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
-    'FunctionDeclarationStatement', 'ValDeclarationStatement', 'VarDeclarationStatement'
+    'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement'
     ]
 
 class Evaluable:
@@ -198,6 +198,17 @@ class FunctionDeclarationStatement(Evaluable):
         
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__expr), repr(self.__params))
+        
+class ReturnStatement(Evaluable):
+    def __init__(self, value_expr):
+        self.__value_expr = value_expr
+        
+    def eval(self):
+        value = self.__value_expr()
+        raise ce.ExitBlockException(value)
+        
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, repr(self.__value_expr))
 
 class ValDeclarationStatement(Evaluable):
     def __init__(self, symbol, init_expr):
@@ -235,8 +246,11 @@ class Block(Evaluable):
 
     def eval(self):
         value = None
-        for e in self.__exprs:
-            value = e()
+        try:
+            for e in self.__exprs:
+                value = e()
+        except ce.ExitBlockException as e:
+            value = e.value
         
         return value
             

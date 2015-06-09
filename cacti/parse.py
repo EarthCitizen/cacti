@@ -29,6 +29,7 @@ def _process_prop_call_expr(operands):
 identifier = Word('_' + alphas, bodyChars='_' + alphanums)
 
 block = Forward()
+callable_block = Forward()
 closure = Forward()
 function = Forward()
 klass = Forward()
@@ -54,6 +55,7 @@ keyword_class = Keyword('class').suppress()
 keyword_closure = Keyword('closure').suppress()
 keyword_function = Keyword('function').suppress()
 keyword_method = Keyword('method').suppress()
+keyword_return = Keyword('return').suppress()
 keyword_super = Keyword('super')
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
@@ -167,7 +169,7 @@ assignment_statement.setParseAction(assignment_statement_action)
 
 ### CLOSURE
 
-closure <<= keyword_closure + open_paren + optional_param_names + close_paren + open_curl + block + close_curl
+closure <<= keyword_closure + open_paren + optional_param_names + close_paren + open_curl + callable_block + close_curl
 def closure_action(s, loc, toks):
     return _add_source_line(s, loc, ast.ClosureDeclarationStatement(toks[1], *toks[0]))
 closure.setParseAction(closure_action)
@@ -178,7 +180,7 @@ closure_statement = closure + statement_end
 function <<= keyword_function + \
                 Optional(identifier, default=None) + \
                 open_paren + optional_param_names + close_paren + \
-                open_curl + block + close_curl
+                open_curl + callable_block + close_curl
 def function_action(s, loc, toks):
     return _add_source_line(s, loc, ast.FunctionDeclarationStatement(toks[0], toks[2], *toks[1]))
 function.setParseAction(function_action)
@@ -188,7 +190,7 @@ function_statement = function + statement_end
 
 method = keyword_method + identifier + \
                 open_paren + optional_param_names + close_paren + \
-                open_curl + block + close_curl
+                open_curl + callable_block + close_curl
 def method_action(s, loc, toks):
     return _add_source_line(s, loc, ast.MethodDefinitionDeclarationStatement(toks[0], toks[2], *toks[1]))
 method.setParseAction(method_action)
@@ -220,6 +222,25 @@ klass_statement = klass + statement_end
 ### STATEMENT
 
 statement = (val_statement | var_statement | value_statement | assignment_statement | comment)
+
+### RETURN STATEMENT
+
+return_statement = keyword_return + Optional(value) + statement_end
+def return_statement_action(s, loc, toks):
+    # Empty
+    if not toks:
+        value_expr = ast.ReferenceExpression('nothing')
+    else:
+        value_expr = toks[0]
+    return ast.ReturnStatement(value_expr)
+return_statement.setParseAction(return_statement_action)
+
+### CALLABLE BLOCK
+
+callable_block <<= ZeroOrMore(return_statement | statement)
+def callable_block_action(s, loc, tok):
+    return ast.Block(*tok)
+callable_block.setParseAction(callable_block_action)
 
 ### BLOCK
 

@@ -1,3 +1,21 @@
-function one(x) {1 + x}
+function foo () {var t = 5; return t}
 
-print(one(10))
+print(foo())
+
+
+var y = 10
+
+var c = closure() { return y }
+
+print(c())
+
+
+class X {
+    method foo(p) {
+        return p * 10
+    }
+}
+
+var x = X()
+
+print(x.foo(3))
