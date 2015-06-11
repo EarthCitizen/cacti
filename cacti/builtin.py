@@ -147,7 +147,7 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_callable=Callable(lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
+                        PropertyGetSetDefinition('string', getter_callable=Callable(lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
                     }
             }
     }
@@ -292,7 +292,7 @@ def _make_string_class():
     classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
     
     string_callable_content = lambda: peek_call_env().symbol_stack['self']
-    string_prop_def = PropertyDefinition('string', getter_callable=Callable(string_callable_content))
+    string_prop_def = PropertyGetSetDefinition('string', getter_callable=Callable(string_callable_content))
     classdef.add_property_definition(string_prop_def)
     
     add_builtin(classdef.name, classdef)
@@ -315,7 +315,7 @@ def _make_numeric_class(class_name, converter):
         classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS[operation])
         
     string_callable_content = lambda: make_string(str(peek_call_env().symbol_stack['self'].primitive))
-    string_prop_def = PropertyDefinition('string', getter_callable=Callable(string_callable_content))
+    string_prop_def = PropertyGetSetDefinition('string', getter_callable=Callable(string_callable_content))
     classdef.add_property_definition(string_prop_def)
     
     add_builtin(classdef.name, classdef)
