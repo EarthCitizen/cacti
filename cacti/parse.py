@@ -21,6 +21,7 @@ _reserved_keywords_ = [
     'method',
     'not', 'nothing',
     'operation', 'or',
+    'procedure',
     'return', 'self', 'super',
     'trait', 'true', 'type',
     'var', 'val'
