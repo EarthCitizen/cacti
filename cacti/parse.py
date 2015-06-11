@@ -19,7 +19,7 @@ _reserved_keywords_ = [
     'false', 'for', 'function',
     'id', 'if', 'in', 'is',
     'method',
-    'nothing',
+    'not', 'nothing',
     'operation', 'or',
     'return', 'self', 'super',
     'trait', 'true', 'type',
