@@ -11,6 +11,8 @@ import cacti.exceptions as excp
 
 __all__ = ['parse_file', 'parse_string']
 
+_reserved_keywords_ = ['and', 'block', 'class', 'closure', 'else', 'for', 'function', 'id', 'if', 'in', 'is', 'method', 'operation', 'or', 'return', 'self', 'super', 'trait', 'type', 'var', 'val']
+
 def _get_source_info(s, loc):
     return '{}:{}: {}'.format(str(lineno(loc, s)), str(col(loc, s)), line(loc, s).strip())
 
@@ -27,6 +29,12 @@ def _process_prop_call_expr(operands):
     return reduce(list_reduction, operands)
 
 identifier = Word('_' + alphas, bodyChars='_' + alphanums)
+
+object_identifier = identifier.copy()
+def object_identifier_action(s, loc, toks):
+    if toks[0] in _reserved_keywords_:
+        raise SyntaxError("'{}' is a reserved keyword: {}".format(toks[0], _get_source_info(s, loc)))
+object_identifier.setParseAction(object_identifier_action)
 
 block = Forward()
 callable_block = Forward()
@@ -117,7 +125,7 @@ value_statement = value + statement_end
 
 ### VAL
 
-val_statement = keyword_val + identifier + assignment_operator + value + statement_end
+val_statement = keyword_val + object_identifier + assignment_operator + value + statement_end
 def val_statement_action(s, loc, toks):
     return _add_source_line(s, loc, ast.ValDeclarationStatement(toks[0], toks[1]))
 val_statement.setParseAction(val_statement_action)
@@ -133,8 +141,8 @@ def var_statement_action(s, loc, toks):
         
     return _add_source_line(s, loc, return_value)
 
-var_assign = keyword_var + identifier + assignment_operator + value
-var_no_assign = keyword_var + identifier
+var_assign = keyword_var + object_identifier + assignment_operator + value
+var_no_assign = keyword_var + object_identifier
 
 var_statement = (var_assign | var_no_assign) + statement_end
 var_statement.setParseAction(var_statement_action)
@@ -178,7 +186,7 @@ closure_statement = closure + statement_end
 ### FUNCTION
 
 function <<= keyword_function + \
-                Optional(identifier, default=None) + \
+                Optional(object_identifier, default=None) + \
                 open_paren + optional_param_names + close_paren + \
                 open_curl + callable_block + close_curl
 def function_action(s, loc, toks):
@@ -188,7 +196,7 @@ function_statement = function + statement_end
 
 ### CLASS
 
-method = keyword_method + identifier + \
+method = keyword_method + object_identifier + \
                 open_paren + optional_param_names + close_paren + \
                 open_curl + callable_block + close_curl
 def method_action(s, loc, toks):
@@ -213,7 +221,7 @@ klass_var_statement.setParseAction(klass_var_statement_action)
 
 klass_content_statement = (method_statment | klass_val_statement | klass_var_statement)
 
-klass <<= keyword_class + identifier + Optional(Literal(':').suppress() + identifier, default='Object') + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
+klass <<= keyword_class + object_identifier + Optional(Literal(':').suppress() + identifier, default='Object') + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
 def klass_action(s, loc, toks):
     return _add_source_line(s, loc, ast.ClassDeclarationStatement(toks[0], toks[1], *toks[2]))
 klass.setParseAction(klass_action)
