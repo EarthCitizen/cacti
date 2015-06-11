@@ -328,6 +328,24 @@ def _make_nothing():
     nothing = ObjectDefinition(nothing_superobj, name='nothing')
     nothing.set_typeobj(nothing_typedef)
     add_builtin(nothing.name, nothing)
+    
+def _make_false():
+    typedef_superobj = make_object()
+    nothing_typedef = TypeDefinition(typedef_superobj, 'False')
+    nothing_typedef.set_typeobj(get_type('Type'))
+    nothing_superobj = make_object()
+    nothing = ObjectDefinition(nothing_superobj, name='false')
+    nothing.set_typeobj(nothing_typedef)
+    add_builtin(nothing.name, nothing)
+    
+def _make_true():
+    typedef_superobj = make_object()
+    nothing_typedef = TypeDefinition(typedef_superobj, 'True')
+    nothing_typedef.set_typeobj(get_type('Type'))
+    nothing_superobj = make_object()
+    nothing = ObjectDefinition(nothing_superobj, name='true')
+    nothing.set_typeobj(nothing_typedef)
+    add_builtin(nothing.name, nothing)
 
 def _make_function_print():
     def fn_print():
@@ -368,6 +386,8 @@ def initialize_builtins():
     _make_type('Method')
     _make_string_class()
     _make_nothing()
+    _make_false()
+    _make_true()
     _make_function_print()
     _make_function_log_debug()
     _make_function_log_info()
