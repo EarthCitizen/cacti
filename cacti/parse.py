@@ -11,7 +11,31 @@ import cacti.exceptions as excp
 
 __all__ = ['parse_file', 'parse_string']
 
-_reserved_keywords_ = ['and', 'block', 'class', 'closure', 'else', 'for', 'function', 'id', 'if', 'in', 'is', 'method', 'operation', 'or', 'return', 'self', 'super', 'trait', 'type', 'var', 'val']
+_reserved_keywords_ = [
+    'and',
+    'block',
+    'class', 'closure',
+    'else',
+    'false', 'for', 'function',
+    'id', 'if', 'in', 'is',
+    'method',
+    'nothing',
+    'operation', 'or',
+    'return', 'self', 'super',
+    'trait', 'true', 'type',
+    'var', 'val'
+    ]
+
+_operators_ = [
+    '*', '/', '+', '-', '//', '%', '**',
+    '*=', '/=', '+=', '-=', '//=', '%=', '**=',
+    '++', '--',
+    '->',
+    '=',
+    '==', '<=', '<', '>=', '>', '$'
+    '!', '<<', '>>', '&', '|',
+    '!=', '<<=', '>>=', '&=', '|='
+    ]
 
 def _get_source_info(s, loc):
     return '{}:{}: {}'.format(str(lineno(loc, s)), str(col(loc, s)), line(loc, s).strip())
