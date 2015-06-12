@@ -9,7 +9,8 @@ from cacti.builtin import get_builtin, make_class, make_object
 __all__ = [
     'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
     'AssignmentStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
-    'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement'
+    'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement',
+    'PropertyFieldDeclaration'
     ]
 
 class Evaluable:
@@ -152,6 +153,29 @@ class ClassDeclarationStatement(Evaluable):
     
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__superclass_name), repr(self.__parts))
+
+class PropertyFieldDeclaration(Evaluable):
+    def __init__(self, property_name, field_name):
+        self.__property_name = property_name
+        self.__field_name = field_name
+        
+    def eval(self):
+        field_name = self.__field_name
+        def get_field_value():
+            call_env = peek_call_env()
+            selfobj = call_env.symbol_stack['self']
+            return selfobj.field_table[field_name]
+        get_field_callable = Callable(get_field_value)
+        def set_field_value():
+            call_env = peek_call_env()
+            selfobj = call_env.symbol_stack['self']
+            value = call_env.symbol_stack['value']
+            selfobj.field_table[field_name] = value
+        set_field_callable = Callable(set_field_value, 'value')
+        return PropertyGetSetDefinition(self.__property_name, field_name, get_field_callable, set_field_callable)
+    
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__field_name))
         
 class MethodDefinitionDeclarationStatement(Evaluable):
     def __init__(self, name, content, *params):

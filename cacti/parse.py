@@ -88,6 +88,7 @@ keyword_class = Keyword('class').suppress()
 keyword_closure = Keyword('closure').suppress()
 keyword_function = Keyword('function').suppress()
 keyword_method = Keyword('method').suppress()
+keyword_property = Keyword('property').suppress()
 keyword_return = Keyword('return').suppress()
 keyword_super = Keyword('super')
 keyword_var = Keyword('var').suppress()
@@ -221,6 +222,14 @@ function_statement = function + statement_end
 
 ### CLASS
 
+property_field = keyword_property + object_identifier + open_paren + identifier + close_paren
+def property_field_action(s, loc, toks):
+    print("TOKS: " + str(toks))
+    return ast.PropertyFieldDeclaration(toks[0], toks[1])
+property_field.setParseAction(property_field_action)
+
+property_statement = property_field + statement_end
+
 method = keyword_method + object_identifier + \
                 open_paren + optional_param_names + close_paren + \
                 open_curl + callable_block + close_curl
@@ -244,7 +253,7 @@ def klass_var_statement_action(s, loc, toks):
         return lang.VarDefinition(symbol, ast.ReferenceExpression('nothing'))
 klass_var_statement.setParseAction(klass_var_statement_action)
 
-klass_content_statement = (method_statment | klass_val_statement | klass_var_statement)
+klass_content_statement = (method_statment | klass_val_statement | klass_var_statement | property_statement)
 
 klass <<= keyword_class + object_identifier + Optional(Literal(':').suppress() + identifier, default='Object') + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
 def klass_action(s, loc, toks):
