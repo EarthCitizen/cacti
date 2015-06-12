@@ -17,12 +17,14 @@ _reserved_keywords_ = [
     'class', 'closure',
     'else',
     'false', 'for', 'function',
+    'get',
     'id', 'if', 'in', 'is',
     'method',
     'not', 'nothing',
     'operation', 'or',
     'procedure',
-    'return', 'self', 'super',
+    'return',
+    'self', 'set', 'super',
     'trait', 'true', 'type',
     'var', 'val'
     ]
@@ -73,7 +75,7 @@ open_curl = Literal("{").suppress()
 close_curl = Literal("}").suppress()
 open_paren = Literal("(").suppress()
 close_paren = Literal(")").suppress()
-optional_param_names = Group(Optional(delimitedList(identifier)))
+optional_param_names = Group(Optional(delimitedList(object_identifier)))
 def optional_param_names_action(s, loc, toks):
     param_names = list(toks[0])
     if param_names:
@@ -87,9 +89,11 @@ optional_param_values = Group(Optional(delimitedList(value)))
 keyword_class = Keyword('class').suppress()
 keyword_closure = Keyword('closure').suppress()
 keyword_function = Keyword('function').suppress()
+keyword_get = Keyword('get').suppress()
 keyword_method = Keyword('method').suppress()
 keyword_property = Keyword('property').suppress()
 keyword_return = Keyword('return').suppress()
+keyword_set = Keyword('set').suppress()
 keyword_super = Keyword('super')
 keyword_var = Keyword('var').suppress()
 keyword_val = Keyword('val').suppress()
@@ -224,11 +228,50 @@ function_statement = function + statement_end
 
 property_field = keyword_property + object_identifier + open_paren + identifier + close_paren
 def property_field_action(s, loc, toks):
-    print("TOKS: " + str(toks))
     return ast.PropertyFieldDeclaration(toks[0], toks[1])
 property_field.setParseAction(property_field_action)
 
-property_statement = property_field + statement_end
+property_get_method = keyword_get + open_curl + callable_block + close_curl
+def property_get_method_action(s, loc, toks):
+    return ast.GetMethodDefinitionStatement(toks[0])
+property_get_method.setParseAction(property_get_method_action)
+
+property_set_method = keyword_set + open_paren + object_identifier + close_paren + open_curl + callable_block + close_curl
+def property_set_method_action(s, lok, toks):
+    param = toks[0]
+    content = toks[1]
+    return ast.SetMethodDefinitionStatement(content, param)
+property_set_method.setParseAction(property_set_method_action)
+
+property_get_set_content = property_get_method | property_set_method
+
+property_get_set = keyword_property + object_identifier + open_curl + OneOrMore(property_get_set_content) + close_curl
+def property_get_set_action(s, loc, toks):
+    valid_combinations = [
+        [ast.GetMethodDefinitionStatement],
+        [ast.GetMethodDefinitionStatement, ast.SetMethodDefinitionStatement],
+        [ast.SetMethodDefinitionStatement, ast.GetMethodDefinitionStatement]]
+    def get_set_syntax_error():
+        raise SyntaxError("property '{}' requires exactly one 'get' or one 'get' and one 'set': {}".format(toks[0], _get_source_info(s, loc)))
+    sections_len = len(toks[1:])
+    if (sections_len < 1) or (sections_len > 2):
+        get_set_syntax_error()
+    
+    getter = toks[1]
+    
+    if sections_len == 1:
+        declared_sections_types = [toks[1].__class__]
+        setter = None
+    else:
+        declared_sections_types = [toks[1].__class__, toks[2].__class__]
+        setter = toks[2]
+        
+    if declared_sections_types not in valid_combinations:
+        get_set_syntax_error()
+    return ast.PropertyGetSetDeclaration(toks[0], getter, setter)
+property_get_set.setParseAction(property_get_set_action)
+
+property_statement = (property_field | property_get_set) + statement_end
 
 method = keyword_method + object_identifier + \
                 open_paren + optional_param_names + close_paren + \
@@ -253,7 +296,7 @@ def klass_var_statement_action(s, loc, toks):
         return lang.VarDefinition(symbol, ast.ReferenceExpression('nothing'))
 klass_var_statement.setParseAction(klass_var_statement_action)
 
-klass_content_statement = (method_statment | klass_val_statement | klass_var_statement | property_statement)
+klass_content_statement = (method_statment | klass_val_statement | klass_var_statement | property_statement | comment)
 
 klass <<= keyword_class + object_identifier + Optional(Literal(':').suppress() + identifier, default='Object') + open_curl + Group(ZeroOrMore(klass_content_statement)) + close_curl
 def klass_action(s, loc, toks):

@@ -145,11 +145,15 @@ class ObjectDefinition:
         petitioner = peek_call_env().owner
         self.__public_or_private_table(petitioner)[symbol_name] = symbol_value
     
-    #def __repr__(self):
-    #    return str(self)
+    def to_native_repr(self):
+        return super().__repr__()
+    
+    def __repr__(self):
+        return self.to_native_repr()
     
     #def __str__(self):
     #    return self.to_string_multi(self)
+    
     
     def to_repr(self):
         return self.to_string_multi(self.selfobj)
@@ -296,7 +300,7 @@ class MethodDefinition:
         return self.__method_callable
         
 class PropertyDefinition:
-    def __init__(self, property_name, getter_callable, setter_callable=None):
+    def __init__(self, property_name, getter_callable=None, setter_callable=None):
         self.__property_name = property_name
         self.__getter_method_def = MethodDefinition(property_name, getter_callable) if getter_callable else None
         self.__setter_method_def = MethodDefinition(property_name, setter_callable) if setter_callable else None
@@ -309,9 +313,15 @@ class PropertyDefinition:
     def getter_method_def(self):
         return self.__getter_method_def
         
+    def set_getter_method_def(self, method_def):
+        self.__getter_method_def = method_def
+        
     @property
     def setter_method_def(self):
         return self.__setter_method_def
+        
+    def set_setter_method_def(self, method_def):
+        self.__setter_method_def = method_def
         
 class ValDefinition:
     def __init__(self, val_name, val_init_expr):
@@ -325,6 +335,9 @@ class ValDefinition:
     @property
     def init_expr(self):
         return self.__val_init_expr
+        
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__val_name), repr(self.__val_init_expr))
 
 class VarDefinition:
     def __init__(self, val_name, val_init_expr):
@@ -338,6 +351,9 @@ class VarDefinition:
     @property
     def init_expr(self):
         return self.__val_init_expr
+        
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__val_name), repr(self.__val_init_expr))
 
 # class Callable(ObjectDefinition):
 #     def check_arity(self, caller, *called_params):

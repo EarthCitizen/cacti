@@ -1,0 +1,18 @@
+class X {
+    var x = 10
+    
+    property foo {
+        get {self.x}
+        
+        set(value) {
+            log_debug()
+            self.x = value
+            log_info()
+        }
+    }
+}
+
+var d = X()
+log_debug()
+d.foo = 1000
+

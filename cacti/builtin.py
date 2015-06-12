@@ -49,6 +49,7 @@ def make_string(value=''):
     assert isinstance(value, str)
     obj = get_builtin('String').hook_table['()'].call()
     obj.primitive = value
+    obj.to_native_repr = types.MethodType(lambda self: "make_string({})".format(repr(self.primitive)), obj)
     return obj
 
 def make_float(value=float(0)):
@@ -56,12 +57,14 @@ def make_float(value=float(0)):
     value = float(value)
     obj = get_builtin('Float').hook_table['()'].call()
     obj.primitive = value
+    obj.to_native_repr = types.MethodType(lambda self: "make_float({})".format(repr(self.primitive)), obj)
     return obj
 
 def make_integer(value=0):
     assert isinstance(value, int)
     obj = get_builtin('Integer').hook_table['()'].call()
     obj.primitive = value
+    obj.to_native_repr = types.MethodType(lambda self: "make_integer({})".format(repr(self.primitive)), obj)
     return obj
 
 class _StubCallable:

@@ -10,7 +10,7 @@ __all__ = [
     'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
     'AssignmentStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
     'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement',
-    'PropertyFieldDeclaration'
+    'PropertyFieldDeclaration', 'PropertyGetSetDeclaration', 'GetMethodDefinitionStatement', 'SetMethodDefinitionStatement'
     ]
 
 class Evaluable:
@@ -34,13 +34,13 @@ class Evaluable:
             else:
                 return ''
         else:
-            super().__getattr__(name)
+            object.__getattribute__(self, name)
     
-    def __setattr__(self, name, value):
-        if name == 'source':
-            self.__dict__[name] = value
-        else:
-            super().__setattr__(name, value)
+    #def __setattr__(self, name, value):
+    #    if name == 'source':
+    #        self.__dict__[name] = value
+    #    else:
+    #        super().__setattr__(name, value)
     
 class OperationExpression(Evaluable):
     def __init__(self, operand_expr, operation, *operation_expr_params):
@@ -102,6 +102,8 @@ class ValueExpression(Evaluable):
         
 class AssignmentStatement(Evaluable):
     def __init__(self, symbol, value_expr, target_expr=None):
+        self.logger = get_logger(self)
+        
         self.__target_expr = target_expr
         self.__symbol = symbol
         self.__value_expr = value_expr
@@ -112,6 +114,7 @@ class AssignmentStatement(Evaluable):
             target = self.__target_expr()
         else:
             target = peek_call_env().symbol_stack.peek()
+        self.logger.debug("Assign {}[{}] the value {}".format(target.to_string(), repr(self.__symbol), value.to_string()))
         target[self.__symbol] = value
         return value
         
@@ -143,6 +146,8 @@ class ClassDeclarationStatement(Evaluable):
             if isinstance(p, MethodDefinitionDeclarationStatement):
                 klass.add_method_definition(p())
             elif isinstance(p, PropertyFieldDeclaration):
+                klass.add_property_definition(p())
+            elif isinstance(p, PropertyGetSetDeclaration):
                 klass.add_property_definition(p())
             elif isinstance(p, ValDefinition):
                 klass.add_val_definition(p)
@@ -178,6 +183,44 @@ class PropertyFieldDeclaration(Evaluable):
     
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__field_name))
+        
+class GetMethodDefinitionStatement(Evaluable):
+    def __init__(self, content):
+        self.__content = content
+        
+    def eval(self):
+        method_callable = Callable(self.__content)
+        return MethodDefinition('get', method_callable)
+        
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, repr(self.__content))
+        
+class SetMethodDefinitionStatement(Evaluable):
+    def __init__(self, content, param):
+        self.__content = content
+        self.__param = param
+        
+    def eval(self):
+        method_callable = Callable(self.__content, self.__param)
+        return MethodDefinition('set', method_callable)
+        
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__, repr(self.__content), repr(self.__param))
+
+class PropertyGetSetDeclaration(Evaluable):
+    def __init__(self, property_name, get_def, set_def):
+        self.__property_name = property_name
+        self.__get_def = get_def
+        self.__set_def = set_def
+        
+    def eval(self):
+        prop_def = PropertyDefinition(self.__property_name)
+        prop_def.set_getter_method_def(self.__get_def())
+        prop_def.set_getter_method_def(self.__get_def())
+        return prop_def
+
+    def __repr__(self):
+        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__get_def), repr(self.__set_def))
         
 class MethodDefinitionDeclarationStatement(Evaluable):
     def __init__(self, name, content, *params):

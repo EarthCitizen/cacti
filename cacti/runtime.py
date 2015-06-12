@@ -236,7 +236,14 @@ class ValueHolder:
 
 
 class ConstantValueHolder(ValueHolder):
+    def __init__(self, value):
+        super().__init__(value)
+        
+        self.logger = get_logger(self)
+        self.logger.debug("Create with value: {}".format(value))
+    
     def set_value(self, value):
+        self.logger.debug("Tried to set constant with value: {}".format(value))
         raise ConstantValueError()
     
     value = property(ValueHolder.get_value, set_value)
