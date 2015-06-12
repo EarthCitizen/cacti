@@ -142,6 +142,8 @@ class ClassDeclarationStatement(Evaluable):
         for p in self.__parts:
             if isinstance(p, MethodDefinitionDeclarationStatement):
                 klass.add_method_definition(p())
+            elif isinstance(p, PropertyFieldDeclaration):
+                klass.add_property_definition(p())
             elif isinstance(p, ValDefinition):
                 klass.add_val_definition(p)
             elif isinstance(p, VarDefinition):
@@ -163,16 +165,16 @@ class PropertyFieldDeclaration(Evaluable):
         field_name = self.__field_name
         def get_field_value():
             call_env = peek_call_env()
-            selfobj = call_env.symbol_stack['self']
+            selfobj = call_env.owner
             return selfobj.field_table[field_name]
         get_field_callable = Callable(get_field_value)
         def set_field_value():
             call_env = peek_call_env()
-            selfobj = call_env.symbol_stack['self']
+            selfobj = call_env.owner
             value = call_env.symbol_stack['value']
             selfobj.field_table[field_name] = value
         set_field_callable = Callable(set_field_value, 'value')
-        return PropertyDefinition(self.__property_name, field_name, get_field_callable, set_field_callable)
+        return PropertyDefinition(self.__property_name, get_field_callable, set_field_callable)
     
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__field_name))

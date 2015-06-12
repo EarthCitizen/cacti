@@ -119,12 +119,12 @@ class ObjectDefinition:
         if get_method_def is None and set_method_def is None:
             value_holder = ValueHolder()
         elif get_method_def is not None and set_method_def is not None:
-            value_holder = PropertyGetValueHolder(
-                MethodBinding(self, property_name, get_method_def))
-        elif get_method_def is not None and set_method_def is None:
             value_holder = PropertyGetSetValueHolder(
                 MethodBinding(self, get_method_def),
                 MethodBinding(self, set_method_def))
+        elif get_method_def is not None and set_method_def is None:
+            value_holder = PropertyGetValueHolder(
+                MethodBinding(self, get_method_def))
         else:
             raise Exception('TBD')
         
@@ -296,7 +296,7 @@ class MethodDefinition:
         return self.__method_callable
         
 class PropertyDefinition:
-    def __init__(self, property_name, *, getter_callable, setter_callable=None):
+    def __init__(self, property_name, getter_callable, setter_callable=None):
         self.__property_name = property_name
         self.__getter_method_def = MethodDefinition(property_name, getter_callable) if getter_callable else None
         self.__setter_method_def = MethodDefinition(property_name, setter_callable) if setter_callable else None

@@ -1,7 +1,25 @@
 class X {
+    var x = 5
+    val y = 100
 	method hello() {}
+	property foo(x)
+	property boo(y)
+}
+
+class B:X {
+    var h = "This is from class B"
+    property foo(h)
 }
 
 var d = X()
-log_debug()
 d.hello()
+print(d.foo)
+d.foo = 10
+print(d.foo)
+
+print(d.boo)
+
+var b = B()
+
+print(b.foo)
+print(b.boo)
