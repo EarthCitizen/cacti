@@ -172,7 +172,7 @@ class PropertyFieldDeclaration(Evaluable):
             value = call_env.symbol_stack['value']
             selfobj.field_table[field_name] = value
         set_field_callable = Callable(set_field_value, 'value')
-        return PropertyGetSetDefinition(self.__property_name, field_name, get_field_callable, set_field_callable)
+        return PropertyDefinition(self.__property_name, field_name, get_field_callable, set_field_callable)
     
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__field_name))

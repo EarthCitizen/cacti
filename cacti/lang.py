@@ -5,7 +5,7 @@ from cacti.exceptions import *
 
 __all__ = [
     'ClassDefinition', 'Closure', 'Function', 'Method',
-    'MethodDefinition', 'ObjectDefinition', 'PropertyGetSetDefinition', 'TypeDefinition',
+    'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition',
     'ValDefinition', 'VarDefinition'
 ]
            
@@ -222,7 +222,7 @@ class TypeDefinition(ObjectDefinition):
         from cacti.builtin import make_string
         super().__init__(superobj, typeobj=typeobj, name=name)
         gc = Callable(lambda: make_string(peek_call_env().symbol_stack['self'].name))
-        self.add_property(PropertyGetSetDefinition('name',getter_callable=gc))
+        self.add_property(PropertyDefinition('name',getter_callable=gc))
     
     def __str__(self):
         return '{}<{}>'.format('Type', self.name)
@@ -295,7 +295,7 @@ class MethodDefinition:
     def callable(self):
         return self.__method_callable
         
-class PropertyGetSetDefinition:
+class PropertyDefinition:
     def __init__(self, property_name, *, getter_callable, setter_callable=None):
         self.__property_name = property_name
         self.__getter_method_def = MethodDefinition(property_name, getter_callable) if getter_callable else None
