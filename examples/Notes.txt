@@ -31,10 +31,13 @@ Possibility:
 Built-in syntax for builder pattern
 
 
+
+
+
 100 -> fn($) -> fn2($[0] $[1])
 
 
-
+Fraction(2, 3) -> [$.numerator, $.denominator] -> fn($[0], $[1]) * $[1]
 
 
 
