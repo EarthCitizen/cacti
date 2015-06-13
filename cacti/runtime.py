@@ -272,6 +272,7 @@ class PropertyGetSetValueHolder(ValueHolder):
 
 class PropertyGetValueHolder(ConstantValueHolder):
     def __init__(self, getter):
+        super().__init__(getter)
         self.logger = get_logger(self)
         self.logger.debug('Create')
         self.__get = getter

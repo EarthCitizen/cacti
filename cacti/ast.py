@@ -114,6 +114,7 @@ class AssignmentStatement(Evaluable):
             target = self.__target_expr()
         else:
             target = peek_call_env().symbol_stack.peek()
+        self.logger.debug("{}[{}] contains the value {}".format(target.to_string(), repr(self.__symbol), target[self.__symbol]))
         self.logger.debug("Assign {}[{}] the value {}".format(target.to_string(), repr(self.__symbol), value.to_string()))
         target[self.__symbol] = value
         return value
@@ -216,7 +217,8 @@ class PropertyGetSetDeclaration(Evaluable):
     def eval(self):
         prop_def = PropertyDefinition(self.__property_name)
         prop_def.set_getter_method_def(self.__get_def())
-        prop_def.set_getter_method_def(self.__get_def())
+        set_def = self.__set_def() if self.__set_def else None
+        prop_def.set_setter_method_def(set_def)
         return prop_def
 
     def __repr__(self):

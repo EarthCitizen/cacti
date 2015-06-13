@@ -130,6 +130,8 @@ class ObjectDefinition:
         
         self.__property_table.add_symbol(property_name, value_holder)
         
+        self.logger.debug("Added property {} with value holder {}".format(repr(property_name), value_holder.__class__))
+        
     def __public_or_private_table(self, petitioner):
         # Is it me asking for a property?
         if petitioner is self:

@@ -1,3 +1,4 @@
+#log_debug()
 class X {
     var x = 10
     
@@ -5,14 +6,12 @@ class X {
         get {self.x}
         
         set(value) {
-            log_debug()
             self.x = value
-            log_info()
         }
     }
 }
 
 var d = X()
-log_debug()
+print(d.foo)
 d.foo = 1000
-
+print(d.foo)
