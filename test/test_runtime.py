@@ -4,6 +4,23 @@ from cacti.runtime import *
 from cacti.builtin import *
 from cacti.lang import *
 
+@pytest.mark.usefixtures('set_up_env')
+class TestCallable:
+    def test_adds_params_to_env(self):
+        def content():
+            return peek_call_env().symbol_stack['a']
+            
+        c = Callable(content, 'a')
+        i = make_integer(5)
+        assert c(i) == i
+        
+    def test_raises_arity_error_for_wrong_param_count(self):
+        def content(): pass
+        c = Callable(content, 'a', 'b')
+        i = make_integer(5)
+        with pytest.raises(ArityError):
+            c(i)
+
 class TestValueHolder:
     def test_accepts_value(self):
         holder = ValueHolder(123)
