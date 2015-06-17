@@ -202,26 +202,66 @@ class Function(ObjectDefinition):
         self.add_hook(MethodDefinition('()', binding))
         
 class Method(ObjectDefinition):
-    def __init__(self, method_owner, method_def):
-        assert isinstance(method_owner, ObjectDefinition)
-        assert isinstance(method_def, MethodDefinition)
+    def __init__(self, owner, name, content, *param_names):
+        assert isinstance(owner, ObjectDefinition)
         
         self.logger = get_logger(self)
         
-        self.logger.debug("Create new method: owner={} name={}".format(str(method_owner), str(method_def.name)))
+        self.__owner = owner
+        self.__name = name
+        self.__content = content
+        self.__param_names = param_names
+        
+        self.__callable = Callable(self.__content, *self.__param_names)
+        
+        self.logger.debug("Create new method: owner={} name={}".format(str(self.__owner), str(self.__name)))
         
         from cacti.builtin import get_type, make_object
-        binding = MethodBinding(method_owner, method_def)
         superobj = make_object()
-        super().__init__(superobj, typeobj=get_type('Method'), name=method_def.name)
+        super().__init__(superobj, typeobj=get_type('Method'), name=name)
         
         # Method () does not need to be bound to self as there is
         # no actual code in which it will refer to itself.
         # Instead it is a delegate for the content of the method
         # definition which is bound to the method owner
-        self.hook_table.add_symbol('()', ConstantValueHolder(binding))
+        self.hook_table.add_symbol('()', ConstantValueHolder(self.call))
         
-        self.logger.debug("Completed new method: owner={} name={}".format(str(method_owner), str(method_def.name)))
+        self.logger.debug("Completed new method: owner={} name={}".format(str(self.__owner), str(self.__name)))
+        
+    def __eq__(self, other):
+        c1 = isinstance(other, self.__class__)
+        c2 = self.__owner == other.__owner
+        c3 = self.__name == other.__name
+        c4 = self.__content == other.__content
+        c5 = self.__param_names == other.__param_names
+        if c1 and c2 and c3 and c4 and c5:
+            return True
+            
+        return False
+
+    def call(self, *params):
+        self.logger.debug('Start method call')
+        call_env = CallEnv(self.__owner, self.__name)
+        push_call_env(call_env)
+        self.logger.debug('Pushed new call env')
+        super_self = call_env.symbol_stack.peek()
+        
+        selfobj = self.__owner.selfobj
+        superobj = self.__owner.superobj
+        
+        self.logger.debug('Owner: {}'.format(str(self.__owner)))
+        
+        self.logger.debug('Adding self: ' + str(selfobj))
+        super_self.add_symbol('self', ConstantValueHolder(selfobj))
+        
+        self.logger.debug('Adding super: ' + str(superobj))
+        super_self.add_symbol('super', ConstantValueHolder(superobj))
+        
+        return_value = self.__callable(*params)
+        self.logger.debug('Returning: ' + str(return_value))
+        
+        pop_call_env()
+        return return_value
         
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
