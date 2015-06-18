@@ -6,15 +6,13 @@ from cacti.exceptions import *
 from cacti.debug import get_logger
 
 __all__ = [
-           # Functions
-           'isvalidhook', 'isvalidsymbol', 'peek_call_env', 'pop_call_env', 'push_call_env',
-           
-           # Classes
-           'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
-           'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
-           
-           'ClosureBinding', 'FunctionBinding', 'MethodBinding'
-           ]
+    # Functions
+    'isvalidhook', 'isvalidsymbol', 'peek_call_env', 'pop_call_env', 'push_call_env',
+    
+    # Classes
+    'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
+    'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
+]
 
 class _Call:
     def __call__(self, *params):
@@ -60,58 +58,58 @@ class Callable(_Call):
         self.logger.debug("Returning: {}".format(str(return_value)))
         return return_value
         
-class ClosureBinding(_Call):
-    def __init__(self, call_env, kallable):
-        self.__call_env = copy.copy(call_env)
-        self.__callable = kallable
-        
-    def call(self, *params):
-        push_call_env(self.__call_env)
-        return_value = self.__callable.call(*params)
-        pop_call_env()
-        return return_value   
+# class ClosureBinding(_Call):
+#     def __init__(self, call_env, kallable):
+#         self.__call_env = copy.copy(call_env)
+#         self.__callable = kallable
+#        
+#     def call(self, *params):
+#         push_call_env(self.__call_env)
+#         return_value = self.__callable.call(*params)
+#         pop_call_env()
+#         return return_value
 
-class FunctionBinding(_Call):
-    def __init__(self, owner, name, kallable):
-        self.__owner = owner
-        self.__name = name
-        self.__callable = kallable
+# class FunctionBinding(_Call):
+#     def __init__(self, owner, name, kallable):
+#         self.__owner = owner
+#         self.__name = name
+#         self.__callable = kallable
+#        
+#     def call(self, *params):
+#         push_call_env(CallEnv(self.__owner, self.__name))
+#         return_value = self.__callable.call(*params)
+#         pop_call_env()
+#         return return_value
         
-    def call(self, *params):
-        push_call_env(CallEnv(self.__owner, self.__name))
-        return_value = self.__callable.call(*params)
-        pop_call_env()
-        return return_value
-        
-class MethodBinding(_Call):
-    def __init__(self, owner, method_def):
-        self.logger = get_logger(self)
-        self.__owner = owner
-        self.__method_def = method_def
-        
-    def call(self, *params):
-        self.logger.debug('Start method call')
-        call_env = CallEnv(self.__owner, self.__method_def.name)
-        push_call_env(call_env)
-        self.logger.debug('Pushed new call env')
-        super_self = call_env.symbol_stack.peek()
-        
-        selfobj = self.__owner.selfobj
-        superobj = self.__owner.superobj
-        
-        self.logger.debug('Owner: {}'.format(str(self.__owner)))
-        
-        self.logger.debug('Adding self: ' + str(selfobj))
-        super_self.add_symbol('self', ConstantValueHolder(selfobj))
-        
-        self.logger.debug('Adding super: ' + str(superobj))
-        super_self.add_symbol('super', ConstantValueHolder(superobj))
-        
-        return_value = self.__method_def.callable.call(*params)
-        self.logger.debug('Returning: ' + str(return_value))
-        
-        pop_call_env()
-        return return_value
+# class MethodBinding(_Call):
+#     def __init__(self, owner, method_def):
+#         self.logger = get_logger(self)
+#         self.__owner = owner
+#         self.__method_def = method_def
+#        
+#     def call(self, *params):
+#         self.logger.debug('Start method call')
+#         call_env = CallEnv(self.__owner, self.__method_def.name)
+#         push_call_env(call_env)
+#         self.logger.debug('Pushed new call env')
+#         super_self = call_env.symbol_stack.peek()
+#        
+#         selfobj = self.__owner.selfobj
+#         superobj = self.__owner.superobj
+#        
+#         self.logger.debug('Owner: {}'.format(str(self.__owner)))
+#        
+#         self.logger.debug('Adding self: ' + str(selfobj))
+#         super_self.add_symbol('self', ConstantValueHolder(selfobj))
+#        
+#         self.logger.debug('Adding super: ' + str(superobj))
+#         super_self.add_symbol('super', ConstantValueHolder(superobj))
+#        
+#         return_value = self.__method_def.callable.call(*params)
+#         self.logger.debug('Returning: ' + str(return_value))
+#        
+#         pop_call_env()
+#         return return_value
 
 CALL_ENV_STACK = collections.deque()
 
@@ -379,6 +377,9 @@ class SymbolTable:
         
     def __str__(self):
         return self.__class__.__name__ + "(" + str(self.__table) + ", parent_table="+ str(self.__parent_table) + ")"
+        
+    def to_string(self):
+        return str(self)
 
 
 class SymbolTableChain:
@@ -426,6 +427,9 @@ class SymbolTableChain:
     
     def __str__(self):
         return self.__class__.__name__ + "(" + str(self.__chain) + ")"
+        
+    def to_string(self):
+        return str(self)
             
 
 class SymbolTableStack:
@@ -484,3 +488,6 @@ class SymbolTableStack:
     
     def __str__(self):
         return self.__class__.__name__ + "(" + str(self.__stack) + ")"
+        
+    def to_string(self):
+        return str(self)
