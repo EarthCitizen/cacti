@@ -1,3 +1,4 @@
+import copy
 import logging
 from cacti.debug import get_logger
 from cacti.runtime import *
@@ -8,7 +9,10 @@ __all__ = [
     'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition',
     'ValDefinition', 'VarDefinition'
 ]
-           
+
+class _Call:
+    def __call__(self, *params):
+        return self.call(*params)
 
 # All ObjectDefinition Instances Have This
 class ObjectDefinition:
@@ -95,9 +99,12 @@ class ObjectDefinition:
     def name(self):
         return self.__name
         
-    def add_hook(self, hook_method_def):
-        binding = MethodBinding(self, hook_method_def)
-        self.__hook_table.add_symbol(hook_method_def.name, ConstantValueHolder(binding))
+    def set_name(self, value):
+        self.__name = value
+        
+    def add_hook(self, method_def):
+        method = method_def.make_method(self)
+        self.__hook_table.add_symbol(method.name, ConstantValueHolder(method))
     
     def add_val(self, val_name, val_value):
         self.__field_table.add_symbol(val_name, ConstantValueHolder(val_value))
@@ -106,9 +113,8 @@ class ObjectDefinition:
         self.__field_table.add_symbol(var_name, ValueHolder(var_value))
         
     def add_method(self, method_def):
-        method = Method(self, method_def)
-        const_value = ConstantValueHolder(method)
-        self.__property_table.add_symbol(method_def.name, const_value)
+        method = method_def.make_method(self)
+        self.__property_table.add_symbol(method.name, ConstantValueHolder(method))
         
     def add_property(self, property_def):
         value_holder = None
@@ -120,11 +126,10 @@ class ObjectDefinition:
             value_holder = ValueHolder()
         elif get_method_def is not None and set_method_def is not None:
             value_holder = PropertyGetSetValueHolder(
-                MethodBinding(self, get_method_def),
-                MethodBinding(self, set_method_def))
+                get_method_def.make_method(self),
+                set_method_def.make_method(self))
         elif get_method_def is not None and set_method_def is None:
-            value_holder = PropertyGetValueHolder(
-                MethodBinding(self, get_method_def))
+            value_holder = PropertyGetValueHolder(get_method_def.make_method(self))
         else:
             raise Exception('TBD')
         
@@ -181,27 +186,51 @@ class PrimitiveObjectDefinition(ObjectDefinition):
         super().__init__(superobj, typeobj=typeobj, name=name)
 
 class Closure(ObjectDefinition):
-    def __init__(self, closure_call_env, closure_callable):
-        assert isinstance(closure_call_env, CallEnv)
-        assert isinstance(closure_callable, Callable)
+    def __init__(self, call_env, content, *param_names):
+        assert isinstance(call_env, CallEnv)
+        
+        self.logger = get_logger(self)
+        
+        self.__call_env = copy.copy(call_env)
+        self.__content = content
+        self.__param_names = param_names
         
         from cacti.builtin import get_builtin, get_type
-        binding = ClosureBinding(closure_call_env, closure_callable)
         superobj = get_builtin('Object').hook_table['()'].call()
         super().__init__(superobj, typeobj=get_type('Closure'))
-        self.add_hook(MethodDefinition('()', binding))
+        self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
-class Function(ObjectDefinition):
-    def __init__(self, function_name, function_callable):
-        assert isinstance(function_callable, Callable)
+    def call(self, *params):
+        push_call_env(self.__call_env)
+        return_value = self.__content(*params)
+        pop_call_env()
+        return return_value
+        
+class Function(ObjectDefinition, _Call):
+    def __init__(self, name, content, *param_names):
+        #assert isinstance(function_callable, Callable)
+        
+        self.logger = get_logger(self)
+        
+        self.__name = name
+        self.__content = content
+        self.__param_names = param_names
+        
+        self.__callable = Callable(self.__content, *self.__param_names)
         
         from cacti.builtin import get_type, make_object
-        binding = FunctionBinding(self, function_name, function_callable)
         superobj = make_object()
-        super().__init__(superobj, typeobj=get_type('Function'), name=function_name)
-        self.add_hook(MethodDefinition('()', binding))
+        super().__init__(superobj, typeobj=get_type('Function'), name=self.__name)
         
-class Method(ObjectDefinition):
+        self.hook_table.add_symbol('()', ConstantValueHolder(self))
+        
+    def call(self, *params):
+        push_call_env(CallEnv(self, self.__name))
+        return_value = self.__callable(*params)
+        pop_call_env()
+        return return_value
+        
+class Method(ObjectDefinition, _Call):
     def __init__(self, owner, name, content, *param_names):
         assert isinstance(owner, ObjectDefinition)
         
@@ -216,15 +245,15 @@ class Method(ObjectDefinition):
         
         self.logger.debug("Create new method: owner={} name={}".format(str(self.__owner), str(self.__name)))
         
-        from cacti.builtin import get_type, make_object
-        superobj = make_object()
+        from cacti.builtin import get_builtin_superobj, get_type, make_object
+        superobj = get_builtin_superobj()
         super().__init__(superobj, typeobj=get_type('Method'), name=name)
         
         # Method () does not need to be bound to self as there is
         # no actual code in which it will refer to itself.
         # Instead it is a delegate for the content of the method
         # definition which is bound to the method owner
-        self.hook_table.add_symbol('()', ConstantValueHolder(self.call))
+        self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
         self.logger.debug("Completed new method: owner={} name={}".format(str(self.__owner), str(self.__name)))
         
@@ -267,11 +296,11 @@ class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
         from cacti.builtin import make_string
         super().__init__(superobj, typeobj=typeobj, name=name)
-        gc = Callable(lambda: make_string(peek_call_env().symbol_stack['self'].name))
-        self.add_property(PropertyDefinition('name',getter_callable=gc))
+        gc = MethodDefinition('get', lambda: make_string(peek_call_env().symbol_stack['self'].name))
+        self.add_property(PropertyDefinition('name', getter_method_def=gc))
     
-    def __str__(self):
-        return '{}<{}>'.format('Type', self.name)
+    #def __str__(self):
+    #    return '{}<{}>'.format('Type', self.name)
         
 class ClassDefinition(TypeDefinition):
     def __init__(self, superobj, name, *, typeobj=None, superclass=None):
@@ -329,23 +358,31 @@ class ClassDefinition(TypeDefinition):
         return '{}<{}>'.format('Class', self.name)
 
 class MethodDefinition:
-    def __init__(self, method_name, method_callable):
-        self.__method_name = method_name
-        self.__method_callable = method_callable
+    def __init__(self, name, content, *param_names):
+        self.__name = name
+        self.__content = content
+        self.__param_names = param_names
         
     @property
     def name(self):
-        return self.__method_name
+        return self.__name
         
     @property
-    def callable(self):
-        return self.__method_callable
+    def content(self):
+        return self.__content
+        
+    @property
+    def param_names(self):
+        return self.__param_names
+        
+    def make_method(self, owner):
+        return Method(owner, self.name, self.content, *self.param_names)
         
 class PropertyDefinition:
-    def __init__(self, property_name, getter_callable=None, setter_callable=None):
+    def __init__(self, property_name, getter_method_def=None, setter_method_def=None):
         self.__property_name = property_name
-        self.__getter_method_def = MethodDefinition(property_name, getter_callable) if getter_callable else None
-        self.__setter_method_def = MethodDefinition(property_name, setter_callable) if setter_callable else None
+        self.__getter_method_def = getter_method_def
+        self.__setter_method_def = setter_method_def
         
     @property
     def name(self):

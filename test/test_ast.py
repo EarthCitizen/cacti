@@ -14,9 +14,8 @@ class TestOperationExpression:
             x = symbol_stack['x']
             y = symbol_stack['y']
             return x.hook_table['*'](y)
-        function_callable = Callable(function_content, 'x', 'y')
-        function = Function('foo', function_callable)
-        main_object = get_builtin('Object').hook_table['()'].call()
+        function = Function('foo', function_content, 'x', 'y')
+        main_object = get_builtin('Object').hook_table['()']()
         main_env = CallEnv(main_object, 'main')
         main_stack = main_env.symbol_stack
         main_table = SymbolTable()

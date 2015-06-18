@@ -1,9 +1,61 @@
-log_debug()
-class X {
+print(5)
+
+function foo() {
+    print("Hello")
 }
 
-var d = X()
-d
-d.id
-log_info()
-print(d.id)
+var x = 500
+
+foo()
+
+var c = closure() {
+    print(x)
+}
+
+c()
+
+var d = function() {
+    print("Hello")
+}
+
+function take_closure(x) {
+    print("Before")
+    x()
+    print("After")
+}
+
+take_closure(c)
+take_closure(d)
+
+class X {
+    var v
+    
+    method do() {
+        print("I am in the class method")
+    }
+    
+    method say(y) {
+        print("Y is: " + y.string)
+    }
+    
+    property p {
+        get {
+            self.v
+        }
+        
+        set (value) {
+            self.v = value
+        }
+    }
+}
+
+var t = X()
+
+take_closure(t.do)
+
+t.do()
+t.say(5)
+t.say(10)
+print(t.p)
+t.p = 5000
+print(t.p)

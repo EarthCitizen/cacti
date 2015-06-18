@@ -23,15 +23,13 @@ class TestObjectDefinition:
     def test_calls_subclass_method(self):
         def super_some_method():
             return make_string("SUPER")
-        super_callable = Callable(super_some_method)
-        super_method_def = MethodDefinition('some_method', super_callable)
+        super_method_def = MethodDefinition('some_method', super_some_method)
         super_obj = make_object()
         super_obj.add_method(super_method_def)
         
         def subclass_some_method():
             return make_string("SUBCLASS")
-        subclass_callable = Callable(subclass_some_method)
-        subclass_method_def = MethodDefinition('some_method', subclass_callable)
+        subclass_method_def = MethodDefinition('some_method', subclass_some_method)
         subclass_obj = make_object()
         subclass_obj.add_method(subclass_method_def)
         
@@ -42,15 +40,13 @@ class TestObjectDefinition:
     def test_calls_superclass_method(self):
         def super_some_method():
             return make_string("SUPER")
-        super_callable = Callable(super_some_method)
-        super_method_def = MethodDefinition('some_method', super_callable)
+        super_method_def = MethodDefinition('some_method', super_some_method)
         super_obj = make_object()
         super_obj.add_method(super_method_def)
         
         def subclass_some_method():
             return peek_call_env().symbol_stack['super']['some_method'].hook_table['()']()
-        subclass_callable = Callable(subclass_some_method)
-        subclass_method_def = MethodDefinition('some_method', subclass_callable)
+        subclass_method_def = MethodDefinition('some_method', subclass_some_method)
         subclass_obj = make_object()
         subclass_obj.add_method(subclass_method_def)
         
