@@ -173,14 +173,14 @@ class PropertyFieldDeclaration(Evaluable):
             call_env = peek_call_env()
             selfobj = call_env.owner
             return selfobj.field_table[field_name]
-        get_field_callable = Callable(get_field_value)
+        get_field_mdef = MethodDefinition('get', get_field_value)
         def set_field_value():
             call_env = peek_call_env()
             selfobj = call_env.owner
             value = call_env.symbol_stack['value']
             selfobj.field_table[field_name] = value
-        set_field_callable = Callable(set_field_value, 'value')
-        return PropertyDefinition(self.__property_name, get_field_callable, set_field_callable)
+        set_field_mdef = MethodDefinition('set', set_field_value, 'value')
+        return PropertyDefinition(self.__property_name, get_field_mdef, set_field_mdef)
     
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__field_name))
@@ -190,8 +190,7 @@ class GetMethodDefinitionStatement(Evaluable):
         self.__content = content
         
     def eval(self):
-        method_callable = Callable(self.__content)
-        return MethodDefinition('get', method_callable)
+        return MethodDefinition('get', self.__content)
         
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, repr(self.__content))
@@ -202,8 +201,7 @@ class SetMethodDefinitionStatement(Evaluable):
         self.__param = param
         
     def eval(self):
-        method_callable = Callable(self.__content, self.__param)
-        return MethodDefinition('set', method_callable)
+        return MethodDefinition('set', self.__content, self.__param)
         
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__content), repr(self.__param))
@@ -231,8 +229,7 @@ class MethodDefinitionDeclarationStatement(Evaluable):
         self.__params = params
         
     def eval(self):
-        method_callable = Callable(self.__content, *self.__params)
-        return MethodDefinition(self.__name, method_callable)
+        return MethodDefinition(self.__name, self.__content, *self.__params)
         
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__content), repr(self.__params))
@@ -243,9 +240,8 @@ class ClosureDeclarationStatement(Evaluable):
         self.__params = params
         
     def eval(self):
-        kallable = Callable(self.__expr, *self.__params)
         call_env = peek_call_env()
-        closure = Closure(call_env, kallable)
+        closure = Closure(call_env, self.__expr, *self.__params)
         return closure
         
     def __repr__(self):
@@ -258,8 +254,7 @@ class FunctionDeclarationStatement(Evaluable):
         self.__params = params
         
     def eval(self):
-        kallable = Callable(self.__expr, *self.__params)
-        function = Function(self.__name, kallable)
+        function = Function(self.__name, self.__expr, *self.__params)
         call_env = peek_call_env()
         if self.__name:
             table = call_env.symbol_stack.peek()

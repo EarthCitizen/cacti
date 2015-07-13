@@ -4,6 +4,23 @@ from cacti.runtime import *
 from cacti.builtin import *
 from cacti.lang import *
 
+@pytest.mark.usefixtures('set_up_env')
+class TestCallable:
+    def test_adds_params_to_env(self):
+        def content():
+            return peek_call_env().symbol_stack['a']
+            
+        c = Callable(content, 'a')
+        i = make_integer(5)
+        assert c(i) == i
+        
+    def test_raises_arity_error_for_wrong_param_count(self):
+        def content(): pass
+        c = Callable(content, 'a', 'b')
+        i = make_integer(5)
+        with pytest.raises(ArityError):
+            c(i)
+
 class TestValueHolder:
     def test_accepts_value(self):
         holder = ValueHolder(123)
@@ -26,16 +43,16 @@ class TestConstantValueHolder:
 @pytest.mark.usefixtures('set_up_env')            
 class TestPropertyGetSetValueHolder:
     def test_getter_executed(self):
+        owner = make_object()
+        
         def get_value():
             return make_integer(456)
         
-        get_value_callable = Callable(get_value)
+        #get_value_callable = Callable(get_value)
         
-        method_def = MethodDefinition('get_value', get_value_callable)
+        get_method_def = MethodDefinition('get_value', get_value)
         
-        get_binding = MethodBinding(make_object(), method_def)
-         
-        _property = PropertyGetSetValueHolder(get_binding, None)
+        _property = PropertyGetSetValueHolder(get_method_def.make_method(owner), None)
         
         assert make_integer(456).primitive == _property.get_value().primitive
      
@@ -45,21 +62,19 @@ class TestPropertyGetSetValueHolder:
          
         def get_value():
             table = peek_call_env().symbol_stack
-            return table['self'].hook_table['.'].call('x')
+            #TODO: For property of operator
+            #return table['self'].hook_table['.']('x')
+            return table['self']['x']
          
-        get_callable = Callable(get_value)
-        get_method_def = MethodDefinition('some_prop', get_callable)
-        bound_get = MethodBinding(owner, get_method_def)
+        get_method_def = MethodDefinition('some_prop', get_value)
          
         def set_value():
             table = peek_call_env().symbol_stack
             table['self']['x'] = table['value']
          
-        set_callable = Callable(set_value, 'value')
-        set_method_def = MethodDefinition('some_prop', set_callable)
-        bound_set = MethodBinding(owner, set_method_def)
+        set_method_def = MethodDefinition('some_prop', set_value, 'value')
          
-        _property = PropertyGetSetValueHolder(bound_get, bound_set)
+        _property = PropertyGetSetValueHolder(get_method_def.make_method(owner), set_method_def.make_method(owner))
         _property.set_value(make_integer(100))
          
         assert make_integer(100).primitive == _property.get_value().primitive
@@ -70,13 +85,11 @@ class TestPropertyGetValueHolder:
         def get_value():
             return make_integer(456)
         
-        get_value_callable = Callable(get_value)
+        get_method_def = MethodDefinition('get_value', get_value)
         
-        method_def = MethodDefinition('get_value', get_value_callable)
-        
-        get_binding = MethodBinding(make_object(), method_def)
+        owner = make_object()
          
-        _property = PropertyGetValueHolder(get_binding)
+        _property = PropertyGetValueHolder(get_method_def.make_method(owner))
         
         assert make_integer(456).primitive == _property.get_value().primitive
       
@@ -84,13 +97,11 @@ class TestPropertyGetValueHolder:
         def get_value():
             return make_integer(456)
         
-        get_value_callable = Callable(get_value)
+        get_method_def = MethodDefinition('get_value', get_value)
         
-        method_def = MethodDefinition('get_value', get_value_callable)
+        owner = make_object()
         
-        get_binding = MethodBinding(make_object(), method_def)
-         
-        _property = PropertyGetValueHolder(get_binding)
+        _property = PropertyGetValueHolder(get_method_def.make_method(owner))
          
         with pytest.raises(ConstantValueError):
             _property.set_value(make_integer(100))

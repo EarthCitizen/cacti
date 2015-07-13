@@ -7,7 +7,8 @@ from cacti.lang import *
 from cacti.exceptions import *
 
 __all__ = [
-    'get_type', 'get_builtin', 'get_builtin_table', 'initialize_builtins',
+    'get_type', 'get_builtin', 'get_builtin_superobj', 'get_builtin_table',
+    'initialize_builtins',
     'make_class', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string'
 ]
 
@@ -30,11 +31,11 @@ def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, 
         superclass = get_builtin(superclass_name)
     classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
     
-    classdef.add_hook(MethodDefinition('()', Callable(_hook_new_callable_content)))
+    classdef.add_hook(MethodDefinition('()', _hook_new_callable_content))
     
     logger.debug("Returning: {}".format(repr(classdef)))
     
-    return classdef   
+    return classdef
 
 def make_main():
     typedef_superobj = make_object()
@@ -120,7 +121,7 @@ def _make_method_def_op_not_supported(operation, *param_names):
         call_env = peek_call_env()
         raise OperationNotSupportedError(call_env.owner.selfobj.typeobj.name, call_env.name)
     method_callable = _StubCallable(do_raise)
-    return MethodDefinition(operation, method_callable)
+    return MethodDefinition(operation, do_raise)
     
 BUILTIN_INIT_DATA = {
         'Object': {
@@ -131,7 +132,7 @@ BUILTIN_INIT_DATA = {
                     },
                 
                 'hook_defs': {
-                        _make_hook_property_of_method_def(),
+                        #_make_hook_property_of_method_def(),
                         
                         _make_method_def_op_not_supported('()'),
                         _make_method_def_op_not_supported('[]'),
@@ -150,7 +151,7 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_callable=Callable(lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
+                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
                     }
             }
     }
@@ -204,34 +205,51 @@ def _init_object_def_from_class_def(object_def, class_def):
 
 _TYPES = SymbolTable()
 _BUILTINS = SymbolTable()
+__BUILTIN_SUPEROBJ = None
 
 def add_type(symbol_name, object_instance):
     _TYPES.add_symbol(symbol_name, ConstantValueHolder(object_instance))
     
 def get_type(symbol_name):
-    return _TYPES[symbol_name]
+    if symbol_name not in _TYPES:
+        t = _make_type(symbol_name)
+        add_type(symbol_name, t)
+        return t
+    else:
+        return _TYPES[symbol_name]
 
 def add_builtin(symbol_name, object_instance):
     _BUILTINS.add_symbol(symbol_name, ConstantValueHolder(object_instance))
     
 def get_builtin(symbol_name):
     return _BUILTINS[symbol_name]
+    
+def get_builtin_superobj():
+    return __BUILTIN_SUPEROBJ
 
 def get_builtin_table():
     return _BUILTINS
 
 def _bootstrap_basic_types():
+    __BUILTIN_SUPEROBJ = ObjectDefinition(None)
+    
+    
+    __typedef_typedef_superobj = __BUILTIN_SUPEROBJ #__object_classdef.hook_table['()'].call()
+    __typedef_typedef = TypeDefinition.__new__(TypeDefinition)
+    __typedef_typedef.set_name('Type')
+    add_type('Type', __typedef_typedef)
+    __typedef_typedef.__init__(__typedef_typedef_superobj, 'Type')
+    __typedef_typedef.set_typeobj(__typedef_typedef)
+    
+    
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    __object_classdef_superobj = ObjectDefinition(None)
+    __object_classdef_superobj = __BUILTIN_SUPEROBJ
     __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
     _init_class_def_from_data(__object_classdef)
     _init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
     
-    __typedef_typedef_superobj = __object_classdef.hook_table['()'].call()
-    __typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
-    __typedef_typedef.set_typeobj(__typedef_typedef)
     
-    __classdef_typedef_superobj = __object_classdef.hook_table['()'].call()
+    __classdef_typedef_superobj = __BUILTIN_SUPEROBJ #__object_classdef.hook_table['()'].call()
     __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
     __classdef_typedef.set_typeobj(__typedef_typedef)
     
@@ -239,14 +257,15 @@ def _bootstrap_basic_types():
     
     add_builtin(__object_classdef.name, __object_classdef)
     
-    add_type(__typedef_typedef.name, __typedef_typedef)
     add_type(__classdef_typedef.name, __classdef_typedef)
     
 def _make_type(type_name):
-    superobj = get_builtin('Object').hook_table['()'].call()
-    typedef = TypeDefinition(superobj, type_name)
-    typedef.set_typeobj(get_type('Type'))
+    superobj = get_builtin_superobj() #get_builtin('Object').hook_table['()'].call()
+    typedef = TypeDefinition.__new__(TypeDefinition)
+    typedef.set_name(type_name)
     add_type(typedef.name, typedef)
+    typedef.__init__(superobj, type_name)
+    typedef.set_typeobj(get_type('Type'))
 
 _PRIMITIVE_OPERATION_FUNCTIONS = {
         '*': operator.mul,
@@ -262,13 +281,11 @@ def _make_primitive_op_method_def(operation):
         selfobj = call_env.symbol_stack['self']
         other = call_env.symbol_stack['other']
         result = _PRIMITIVE_OPERATION_FUNCTIONS[operation](selfobj.primitive, other.primitive)
-        new_object = get_builtin(selfobj.typeobj.name).hook_table['()'].call()
+        new_object = get_builtin(selfobj.typeobj.name).hook_table['()']()
         new_object.primitive = result
         return new_object
     
-    op_callable = Callable(callable_content, 'other')
-    
-    return MethodDefinition(operation, op_callable)
+    return MethodDefinition(operation, callable_content, 'other')
         
 
 _PRIMITIVE_OPERATION_METHOD_DEFS = {
@@ -290,12 +307,12 @@ def _make_string_class():
         obj.to_string = types.MethodType(lambda self: self.primitive, obj)
         return obj
         
-    classdef.add_hook(MethodDefinition('()', Callable(new_callable_content)))
+    classdef.add_hook(MethodDefinition('()', new_callable_content))
     
     classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
     
     string_callable_content = lambda: peek_call_env().symbol_stack['self']
-    string_prop_def = PropertyDefinition('string', getter_callable=Callable(string_callable_content))
+    string_prop_def = PropertyDefinition('string', getter_method_def=MethodDefinition('get', string_callable_content))
     classdef.add_property_definition(string_prop_def)
     
     add_builtin(classdef.name, classdef)
@@ -318,7 +335,7 @@ def _make_numeric_class(class_name, converter):
         classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS[operation])
         
     string_callable_content = lambda: make_string(str(peek_call_env().symbol_stack['self'].primitive))
-    string_prop_def = PropertyDefinition('string', getter_callable=Callable(string_callable_content))
+    string_prop_def = PropertyDefinition('string', getter_method_def=MethodDefinition('get', string_callable_content))
     classdef.add_property_definition(string_prop_def)
     
     add_builtin(classdef.name, classdef)
@@ -355,9 +372,7 @@ def _make_function_print():
         value = peek_call_env().symbol_stack['value'].public_table['string']
         print(value.primitive)
     
-    fn_callable = Callable(fn_print, 'value')
-        
-    fn = Function('print', fn_callable)
+    fn = Function('print', fn_print, 'value')
     add_builtin(fn.name, fn)
     
 def _make_function_log_debug():
@@ -386,7 +401,7 @@ def initialize_builtins():
     _bootstrap_basic_types()
     _make_type('Function')
     _make_type('Closure')
-    _make_type('Method')
+    #_make_type('Method')
     _make_string_class()
     _make_nothing()
     _make_false()
