@@ -9,8 +9,8 @@ from cacti.ast import *
 class TestOperationExpression:
     def test_returns_expected_value(self):
         def function_content():
-            call_env = peek_stack_frame()
-            symbol_stack = call_env.symbol_stack
+            stack_frame = peek_stack_frame()
+            symbol_stack = stack_frame.symbol_stack
             x = symbol_stack['x']
             y = symbol_stack['y']
             return x.hook_table['*'](y)
@@ -37,8 +37,8 @@ class TestReferenceExpression:
     def test_returns_dereferenced_value(self):
         table = SymbolTable()
         table.add_symbol('X', ConstantValueHolder(123))
-        call_env = peek_stack_frame()
-        call_env.symbol_stack.push(table)
+        stack_frame = peek_stack_frame()
+        stack_frame.symbol_stack.push(table)
         expr = ReferenceExpression('X')
         assert 123 == expr()
 
@@ -63,30 +63,30 @@ class TestValDeclarationStatement:
     def test_creates_symbol_with_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
-        call_env = peek_stack_frame()
-        assert call_env.symbol_stack['x'].primitive == 5
+        stack_frame = peek_stack_frame()
+        assert stack_frame.symbol_stack['x'].primitive == 5
     
     def test_creates_constant_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))
         val_stmt()
         with pytest.raises(ConstantValueError):
-            call_env = peek_stack_frame()
-            call_env.symbol_stack['x'] = make_integer(99)
+            stack_frame = peek_stack_frame()
+            stack_frame.symbol_stack['x'] = make_integer(99)
 
 @pytest.mark.usefixtures('set_up_env')
 class TestVarDeclarationStatement:
     def test_creates_symbol_with_value(self):
         var_stmt = VarDeclarationStatement('x', ValueExpression(make_integer(5)))
         var_stmt()
-        call_env = peek_stack_frame()
-        assert call_env.symbol_stack['x'].primitive == 5
+        stack_frame = peek_stack_frame()
+        assert stack_frame.symbol_stack['x'].primitive == 5
         
     def test_creates_changeable_value(self):
         var_stmt = VarDeclarationStatement('x', ValueExpression(make_integer(5)))
         var_stmt()
-        call_env = peek_stack_frame()
-        call_env.symbol_stack['x'] = make_integer(99)
-        assert call_env.symbol_stack['x'].primitive == 99
+        stack_frame = peek_stack_frame()
+        stack_frame.symbol_stack['x'] = make_integer(99)
+        assert stack_frame.symbol_stack['x'].primitive == 99
         
 class ShowCalledExpression:
         def __init__(self):

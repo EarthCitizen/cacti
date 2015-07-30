@@ -170,14 +170,14 @@ class PropertyFieldDeclaration(Evaluable):
     def eval(self):
         field_name = self.__field_name
         def get_field_value():
-            call_env = peek_stack_frame()
-            selfobj = call_env.owner
+            stack_frame = peek_stack_frame()
+            selfobj = stack_frame.owner
             return selfobj.field_table[field_name]
         get_field_mdef = MethodDefinition('get', get_field_value)
         def set_field_value():
-            call_env = peek_stack_frame()
-            selfobj = call_env.owner
-            value = call_env.symbol_stack['value']
+            stack_frame = peek_stack_frame()
+            selfobj = stack_frame.owner
+            value = stack_frame.symbol_stack['value']
             selfobj.field_table[field_name] = value
         set_field_mdef = MethodDefinition('set', set_field_value, 'value')
         return PropertyDefinition(self.__property_name, get_field_mdef, set_field_mdef)
@@ -240,8 +240,8 @@ class ClosureDeclarationStatement(Evaluable):
         self.__params = params
         
     def eval(self):
-        call_env = peek_stack_frame()
-        closure = Closure(call_env, self.__expr, *self.__params)
+        stack_frame = peek_stack_frame()
+        closure = Closure(stack_frame, self.__expr, *self.__params)
         return closure
         
     def __repr__(self):
@@ -255,9 +255,9 @@ class FunctionDeclarationStatement(Evaluable):
         
     def eval(self):
         function = Function(self.__name, self.__expr, *self.__params)
-        call_env = peek_stack_frame()
+        stack_frame = peek_stack_frame()
         if self.__name:
-            table = call_env.symbol_stack.peek()
+            table = stack_frame.symbol_stack.peek()
             table.add_symbol(self.__name, ConstantValueHolder(function))
         
         return function
@@ -283,8 +283,8 @@ class ValDeclarationStatement(Evaluable):
         
     def eval(self):
         value = self.__init_expr()
-        call_env = peek_stack_frame()
-        table = call_env.symbol_stack.peek()
+        stack_frame = peek_stack_frame()
+        table = stack_frame.symbol_stack.peek()
         table.add_symbol(self.__symbol, ConstantValueHolder(value))
         return value
         
@@ -298,8 +298,8 @@ class VarDeclarationStatement(Evaluable):
         
     def eval(self):
         value = self.__init_expr()
-        call_env = peek_stack_frame()
-        table = call_env.symbol_stack.peek()
+        stack_frame = peek_stack_frame()
+        table = stack_frame.symbol_stack.peek()
         table.add_symbol(self.__symbol, ValueHolder(value))
         return value
         

@@ -27,10 +27,10 @@ class Callable(_Call):
         
     def __check_arity(self, *param_values):
         if len(self.__params) != len(param_values):
-            call_env = peek_stack_frame()
+            stack_frame = peek_stack_frame()
             kwargs = {
-                'caller': str(call_env.owner),
-                'name': call_env.name,
+                'caller': str(stack_frame.owner),
+                'name': stack_frame.name,
                 'exp': len(self.__params),
                 'got': len(param_values)
                 }
@@ -48,8 +48,8 @@ class Callable(_Call):
         from cacti.builtin import get_builtin
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
-        call_env = peek_stack_frame()
-        symbol_stack = call_env.symbol_stack
+        stack_frame = peek_stack_frame()
+        symbol_stack = stack_frame.symbol_stack
         symbol_stack.push(param_table)
         return_value = self.__content()
         symbol_stack.pop()
@@ -59,8 +59,8 @@ class Callable(_Call):
         return return_value
         
 # class ClosureBinding(_Call):
-#     def __init__(self, call_env, kallable):
-#         self.__call_env = copy.copy(call_env)
+#     def __init__(self, stack_frame, kallable):
+#         self.__call_env = copy.copy(stack_frame)
 #         self.__callable = kallable
 #        
 #     def call(self, *params):
@@ -89,10 +89,10 @@ class Callable(_Call):
 #        
 #     def call(self, *params):
 #         self.logger.debug('Start method call')
-#         call_env = StackFrame(self.__owner, self.__method_def.name)
-#         push_stack_frame(call_env)
+#         stack_frame = StackFrame(self.__owner, self.__method_def.name)
+#         push_stack_frame(stack_frame)
 #         self.logger.debug('Pushed new call env')
-#         super_self = call_env.symbol_stack.peek()
+#         super_self = stack_frame.symbol_stack.peek()
 #        
 #         selfobj = self.__owner.selfobj
 #         superobj = self.__owner.superobj
@@ -145,10 +145,10 @@ def push_stack_frame(stack_frame):
 def peek_stack_frame(pos=0):
     if len(STACK) < (pos + 1):
         return None
-    call_env = STACK[pos]
+    stack_frame = STACK[pos]
     if __debug_stack:
-        __stack_info("::-PEEK({}): ".format(lvl-1), call_env)
-    return call_env
+        __stack_info("::-PEEK({}): ".format(lvl-1), stack_frame)
+    return stack_frame
     
 def pop_stack_frame():
     popped = STACK.popleft()

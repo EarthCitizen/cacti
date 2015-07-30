@@ -186,12 +186,12 @@ class PrimitiveObjectDefinition(ObjectDefinition):
         super().__init__(superobj, typeobj=typeobj, name=name)
 
 class Closure(ObjectDefinition):
-    def __init__(self, call_env, content, *param_names):
-        assert isinstance(call_env, StackFrame)
+    def __init__(self, stack_frame, content, *param_names):
+        assert isinstance(stack_frame, StackFrame)
         
         self.logger = get_logger(self)
         
-        self.__call_env = copy.copy(call_env)
+        self.__stack_frame = copy.copy(stack_frame)
         self.__content = content
         self.__param_names = param_names
         
@@ -201,7 +201,7 @@ class Closure(ObjectDefinition):
         self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
     def call(self, *params):
-        push_stack_frame(self.__call_env)
+        push_stack_frame(self.__stack_frame)
         return_value = self.__content(*params)
         pop_stack_frame()
         return return_value
@@ -270,10 +270,10 @@ class Method(ObjectDefinition, _Call):
 
     def call(self, *params):
         self.logger.debug('Start method call')
-        call_env = StackFrame(self.__owner, self.__name)
-        push_stack_frame(call_env)
+        stack_frame = StackFrame(self.__owner, self.__name)
+        push_stack_frame(stack_frame)
         self.logger.debug('Pushed new call env')
-        super_self = call_env.symbol_stack.peek()
+        super_self = stack_frame.symbol_stack.peek()
         
         selfobj = self.__owner.selfobj
         superobj = self.__owner.superobj

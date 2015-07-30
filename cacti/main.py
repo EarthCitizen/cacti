@@ -13,14 +13,14 @@ import sys
 
 configure_logging()
 
-def set_up_main_call_env():
+def set_up_main_stack_frame():
     mainobj = make_main()
-    call_env = StackFrame(mainobj, mainobj.name)
-    push_stack_frame(call_env)
+    stack_frame = StackFrame(mainobj, mainobj.name)
+    push_stack_frame(stack_frame)
 
 def main():
     initialize_builtins()
-    set_up_main_call_env()
+    set_up_main_stack_frame()
     
     #ast = parse_string('class foo {}')
     #print(ast)

@@ -16,8 +16,8 @@ class TestObjectDefinition:
     def test_var_accessible_within_object(self):
         obj = make_object()
         obj.add_var('x', make_integer(123))
-        call_env = StackFrame(obj, 'some_method')
-        push_stack_frame(call_env)
+        stack_frame = StackFrame(obj, 'some_method')
+        push_stack_frame(stack_frame)
         assert obj['x'].primitive == 123
         
     def test_calls_subclass_method(self):

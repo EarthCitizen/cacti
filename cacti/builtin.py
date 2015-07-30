@@ -24,9 +24,9 @@ def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, 
     logger.debug("name={}, superclass_name={}".format(repr(name), repr(superclass_name)))
     superobj = make_object()
     typeobj = get_type('Class')
-    call_env = peek_stack_frame()
-    if call_env and (superclass_name in call_env.symbol_stack):
-        superclass = call_env.symbol_stack[superclass_name]
+    stack_frame = peek_stack_frame()
+    if stack_frame and (superclass_name in stack_frame.symbol_stack):
+        superclass = stack_frame.symbol_stack[superclass_name]
     else:
         superclass = get_builtin(superclass_name)
     classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
@@ -118,8 +118,8 @@ def _make_hook_property_of_method_def():
 
 def _make_method_def_op_not_supported(operation, *param_names):
     def do_raise():
-        call_env = peek_stack_frame()
-        raise OperationNotSupportedError(call_env.owner.selfobj.typeobj.name, call_env.name)
+        stack_frame = peek_stack_frame()
+        raise OperationNotSupportedError(stack_frame.owner.selfobj.typeobj.name, stack_frame.name)
     method_callable = _StubCallable(do_raise)
     return MethodDefinition(operation, do_raise)
     
@@ -187,9 +187,9 @@ def _init_object_def_from_class_def(object_def, class_def):
     for prop_def in class_def.property_definitions:
         object_def.add_property(prop_def)
         
-    call_env = StackFrame(object_def, 'self')
-    call_env.symbol_stack.push(object_def.field_table)
-    push_stack_frame(call_env)
+    stack_frame = StackFrame(object_def, 'self')
+    stack_frame.symbol_stack.push(object_def.field_table)
+    push_stack_frame(stack_frame)
     
     # Initialize constants
     for val_def in class_def.val_definitions:
@@ -277,9 +277,9 @@ _PRIMITIVE_OPERATION_FUNCTIONS = {
 def _make_primitive_op_method_def(operation):
     
     def callable_content():
-        call_env = peek_stack_frame()
-        selfobj = call_env.symbol_stack['self']
-        other = call_env.symbol_stack['other']
+        stack_frame = peek_stack_frame()
+        selfobj = stack_frame.symbol_stack['self']
+        other = stack_frame.symbol_stack['other']
         result = _PRIMITIVE_OPERATION_FUNCTIONS[operation](selfobj.primitive, other.primitive)
         new_object = get_builtin(selfobj.typeobj.name).hook_table['()']()
         new_object.primitive = result
