@@ -145,11 +145,11 @@ class ObjectDefinition:
             return self.public_table
     
     def __getitem__(self, symbol_name):
-        petitioner = peek_call_env().owner
+        petitioner = peek_stack_frame().owner
         return self.__public_or_private_table(petitioner)[symbol_name]
     
     def __setitem__(self, symbol_name, symbol_value):
-        petitioner = peek_call_env().owner
+        petitioner = peek_stack_frame().owner
         self.__public_or_private_table(petitioner)[symbol_name] = symbol_value
     
     def to_native_repr(self):
@@ -186,12 +186,12 @@ class PrimitiveObjectDefinition(ObjectDefinition):
         super().__init__(superobj, typeobj=typeobj, name=name)
 
 class Closure(ObjectDefinition):
-    def __init__(self, call_env, content, *param_names):
-        assert isinstance(call_env, CallEnv)
+    def __init__(self, stack_frame, content, *param_names):
+        assert isinstance(stack_frame, StackFrame)
         
         self.logger = get_logger(self)
         
-        self.__call_env = copy.copy(call_env)
+        self.__stack_frame = copy.copy(stack_frame)
         self.__content = content
         self.__param_names = param_names
         
@@ -201,9 +201,9 @@ class Closure(ObjectDefinition):
         self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
     def call(self, *params):
-        push_call_env(self.__call_env)
+        push_stack_frame(self.__stack_frame)
         return_value = self.__content(*params)
-        pop_call_env()
+        pop_stack_frame()
         return return_value
         
 class Function(ObjectDefinition, _Call):
@@ -225,9 +225,9 @@ class Function(ObjectDefinition, _Call):
         self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
     def call(self, *params):
-        push_call_env(CallEnv(self, self.__name))
+        push_stack_frame(StackFrame(self, self.__name))
         return_value = self.__callable(*params)
-        pop_call_env()
+        pop_stack_frame()
         return return_value
         
 class Method(ObjectDefinition, _Call):
@@ -270,10 +270,10 @@ class Method(ObjectDefinition, _Call):
 
     def call(self, *params):
         self.logger.debug('Start method call')
-        call_env = CallEnv(self.__owner, self.__name)
-        push_call_env(call_env)
+        stack_frame = StackFrame(self.__owner, self.__name)
+        push_stack_frame(stack_frame)
         self.logger.debug('Pushed new call env')
-        super_self = call_env.symbol_stack.peek()
+        super_self = stack_frame.symbol_stack.peek()
         
         selfobj = self.__owner.selfobj
         superobj = self.__owner.superobj
@@ -289,14 +289,14 @@ class Method(ObjectDefinition, _Call):
         return_value = self.__callable(*params)
         self.logger.debug('Returning: ' + str(return_value))
         
-        pop_call_env()
+        pop_stack_frame()
         return return_value
         
 class TypeDefinition(ObjectDefinition):
     def __init__(self, superobj, name, *, typeobj=None):
         from cacti.builtin import make_string
         super().__init__(superobj, typeobj=typeobj, name=name)
-        gc = MethodDefinition('get', lambda: make_string(peek_call_env().symbol_stack['self'].name))
+        gc = MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].name))
         self.add_property(PropertyDefinition('name', getter_method_def=gc))
     
     #def __str__(self):

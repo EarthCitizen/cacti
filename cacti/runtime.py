@@ -7,10 +7,10 @@ from cacti.debug import get_logger
 
 __all__ = [
     # Functions
-    'isvalidhook', 'isvalidsymbol', 'peek_call_env', 'pop_call_env', 'push_call_env',
+    'isvalidhook', 'isvalidsymbol', 'peek_stack_frame', 'pop_stack_frame', 'push_stack_frame',
     
     # Classes
-    'CallEnv', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
+    'StackFrame', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
     'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
 ]
 
@@ -27,10 +27,10 @@ class Callable(_Call):
         
     def __check_arity(self, *param_values):
         if len(self.__params) != len(param_values):
-            call_env = peek_call_env()
+            stack_frame = peek_stack_frame()
             kwargs = {
-                'caller': str(call_env.owner),
-                'name': call_env.name,
+                'caller': str(stack_frame.owner),
+                'name': stack_frame.name,
                 'exp': len(self.__params),
                 'got': len(param_values)
                 }
@@ -48,8 +48,8 @@ class Callable(_Call):
         from cacti.builtin import get_builtin
         self.__check_arity(*param_values)
         param_table = self.__make_params_table(*param_values)
-        call_env = peek_call_env()
-        symbol_stack = call_env.symbol_stack
+        stack_frame = peek_stack_frame()
+        symbol_stack = stack_frame.symbol_stack
         symbol_stack.push(param_table)
         return_value = self.__content()
         symbol_stack.pop()
@@ -59,14 +59,14 @@ class Callable(_Call):
         return return_value
         
 # class ClosureBinding(_Call):
-#     def __init__(self, call_env, kallable):
-#         self.__call_env = copy.copy(call_env)
+#     def __init__(self, stack_frame, kallable):
+#         self.__call_env = copy.copy(stack_frame)
 #         self.__callable = kallable
 #        
 #     def call(self, *params):
-#         push_call_env(self.__call_env)
+#         push_stack_frame(self.__call_env)
 #         return_value = self.__callable.call(*params)
-#         pop_call_env()
+#         pop_stack_frame()
 #         return return_value
 
 # class FunctionBinding(_Call):
@@ -76,9 +76,9 @@ class Callable(_Call):
 #         self.__callable = kallable
 #        
 #     def call(self, *params):
-#         push_call_env(CallEnv(self.__owner, self.__name))
+#         push_stack_frame(StackFrame(self.__owner, self.__name))
 #         return_value = self.__callable.call(*params)
-#         pop_call_env()
+#         pop_stack_frame()
 #         return return_value
         
 # class MethodBinding(_Call):
@@ -89,10 +89,10 @@ class Callable(_Call):
 #        
 #     def call(self, *params):
 #         self.logger.debug('Start method call')
-#         call_env = CallEnv(self.__owner, self.__method_def.name)
-#         push_call_env(call_env)
+#         stack_frame = StackFrame(self.__owner, self.__method_def.name)
+#         push_stack_frame(stack_frame)
 #         self.logger.debug('Pushed new call env')
-#         super_self = call_env.symbol_stack.peek()
+#         super_self = stack_frame.symbol_stack.peek()
 #        
 #         selfobj = self.__owner.selfobj
 #         superobj = self.__owner.superobj
@@ -108,25 +108,25 @@ class Callable(_Call):
 #         return_value = self.__method_def.callable.call(*params)
 #         self.logger.debug('Returning: ' + str(return_value))
 #        
-#         pop_call_env()
+#         pop_stack_frame()
 #         return return_value
 
-CALL_ENV_STACK = collections.deque()
+STACK = collections.deque()
 
 __debug_stack = False
 
-def __stack_info(prefix, call_env):
-    owner = call_env.owner
+def __stack_info(prefix, stack_frame):
+    owner = stack_frame.owner
     global lvl_str
     global lvl
-    #selfobj = call_env.symbol_stack['self'] if 'self' in call_env.symbol_stack else ''
-    #superobj = call_env.symbol_stack['super'] if 'super' in call_env.symbol_stack else ''
+    #selfobj = stack_frame.symbol_stack['self'] if 'self' in stack_frame.symbol_stack else ''
+    #superobj = stack_frame.symbol_stack['super'] if 'super' in stack_frame.symbol_stack else ''
     print((lvl_str * lvl) + "{} {} {} {} {} SELF: {} SUPER: {}".format(
         prefix,
         str(id(owner)),
         str(owner),
         str(owner.typeobj),
-        call_env.name,
+        stack_frame.name,
         None, #str(selfobj),
         None #str(superobj)
         ))
@@ -134,24 +134,24 @@ def __stack_info(prefix, call_env):
 lvl_str = '\t'
 lvl = 0
 
-def push_call_env(call_env):
+def push_stack_frame(stack_frame):
     global lvl_str
     global lvl
     if __debug_stack:
-        __stack_info("::->PUSH({}): ".format(lvl), call_env)
+        __stack_info("::->PUSH({}): ".format(lvl), stack_frame)
     lvl += 1
-    CALL_ENV_STACK.appendleft(call_env)
+    STACK.appendleft(stack_frame)
     
-def peek_call_env(pos=0):
-    if len(CALL_ENV_STACK) < (pos + 1):
+def peek_stack_frame(pos=0):
+    if len(STACK) < (pos + 1):
         return None
-    call_env = CALL_ENV_STACK[pos]
+    stack_frame = STACK[pos]
     if __debug_stack:
-        __stack_info("::-PEEK({}): ".format(lvl-1), call_env)
-    return call_env
+        __stack_info("::-PEEK({}): ".format(lvl-1), stack_frame)
+    return stack_frame
     
-def pop_call_env():
-    popped = CALL_ENV_STACK.popleft()
+def pop_stack_frame():
+    popped = STACK.popleft()
     global lvl_str
     global lvl
     lvl -= 1
@@ -159,7 +159,7 @@ def pop_call_env():
         __stack_info("::<-POPPED({}): ".format(lvl), popped)
     return popped
 
-class CallEnv:
+class StackFrame:
     def __init__(self, owner, name, selfobj=None):
         from cacti.builtin import get_builtin_table
         from cacti.lang import ObjectDefinition

@@ -16,8 +16,8 @@ class TestObjectDefinition:
     def test_var_accessible_within_object(self):
         obj = make_object()
         obj.add_var('x', make_integer(123))
-        call_env = CallEnv(obj, 'some_method')
-        push_call_env(call_env)
+        stack_frame = StackFrame(obj, 'some_method')
+        push_stack_frame(stack_frame)
         assert obj['x'].primitive == 123
         
     def test_calls_subclass_method(self):
@@ -45,7 +45,7 @@ class TestObjectDefinition:
         super_obj.add_method(super_method_def)
         
         def subclass_some_method():
-            return peek_call_env().symbol_stack['super']['some_method'].hook_table['()']()
+            return peek_stack_frame().symbol_stack['super']['some_method'].hook_table['()']()
         subclass_method_def = MethodDefinition('some_method', subclass_some_method)
         subclass_obj = make_object()
         subclass_obj.add_method(subclass_method_def)

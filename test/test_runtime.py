@@ -8,7 +8,7 @@ from cacti.lang import *
 class TestCallable:
     def test_adds_params_to_env(self):
         def content():
-            return peek_call_env().symbol_stack['a']
+            return peek_stack_frame().symbol_stack['a']
             
         c = Callable(content, 'a')
         i = make_integer(5)
@@ -61,7 +61,7 @@ class TestPropertyGetSetValueHolder:
         owner.add_var('x', make_integer(999))
          
         def get_value():
-            table = peek_call_env().symbol_stack
+            table = peek_stack_frame().symbol_stack
             #TODO: For property of operator
             #return table['self'].hook_table['.']('x')
             return table['self']['x']
@@ -69,7 +69,7 @@ class TestPropertyGetSetValueHolder:
         get_method_def = MethodDefinition('some_prop', get_value)
          
         def set_value():
-            table = peek_call_env().symbol_stack
+            table = peek_stack_frame().symbol_stack
             table['self']['x'] = table['value']
          
         set_method_def = MethodDefinition('some_prop', set_value, 'value')

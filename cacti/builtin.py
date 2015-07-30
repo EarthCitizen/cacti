@@ -24,9 +24,9 @@ def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, 
     logger.debug("name={}, superclass_name={}".format(repr(name), repr(superclass_name)))
     superobj = make_object()
     typeobj = get_type('Class')
-    call_env = peek_call_env()
-    if call_env and (superclass_name in call_env.symbol_stack):
-        superclass = call_env.symbol_stack[superclass_name]
+    stack_frame = peek_stack_frame()
+    if stack_frame and (superclass_name in stack_frame.symbol_stack):
+        superclass = stack_frame.symbol_stack[superclass_name]
     else:
         superclass = get_builtin(superclass_name)
     classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
@@ -77,7 +77,7 @@ class _StubCallable:
 
 ### HOOK NEW ###
 def _hook_new_callable_content():
-    class_def = peek_call_env().owner
+    class_def = peek_stack_frame().owner
     superclass_def = class_def.superclass
     superobj = superclass_def.hook_table['()'].call() if superclass_def else None
     obj = ObjectDefinition(superobj, typeobj=class_def)
@@ -86,7 +86,7 @@ def _hook_new_callable_content():
 
 def _make_hook_new_method_def():
     def hook_new_body():
-        class_def = peek_call_env().owner
+        class_def = peek_stack_frame().owner
         superclass_def = class_def.superclass
         superobj = superclass_def.hook_table['()'].call() if superclass_def else None
         obj = ObjectDefinition(superobj, typeobj=class_def)
@@ -102,8 +102,8 @@ def _make_hook_new_method_def():
 ### HOOK PROPERTY OF ###
 def _make_hook_property_of_method_def():
     def hook_property_of_body():
-        call_owner = peek_call_env(1).owner
-        curr_env = peek_call_env()
+        call_owner = peek_stack_frame(1).owner
+        curr_env = peek_stack_frame()
         curr_owner = curr_env.owner
         property_name = curr_env.symbol_stack['property_name']
         
@@ -118,8 +118,8 @@ def _make_hook_property_of_method_def():
 
 def _make_method_def_op_not_supported(operation, *param_names):
     def do_raise():
-        call_env = peek_call_env()
-        raise OperationNotSupportedError(call_env.owner.selfobj.typeobj.name, call_env.name)
+        stack_frame = peek_stack_frame()
+        raise OperationNotSupportedError(stack_frame.owner.selfobj.typeobj.name, stack_frame.name)
     method_callable = _StubCallable(do_raise)
     return MethodDefinition(operation, do_raise)
     
@@ -151,7 +151,7 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
+                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].to_string()))),
                     }
             }
     }
@@ -187,9 +187,9 @@ def _init_object_def_from_class_def(object_def, class_def):
     for prop_def in class_def.property_definitions:
         object_def.add_property(prop_def)
         
-    call_env = CallEnv(object_def, 'self')
-    call_env.symbol_stack.push(object_def.field_table)
-    push_call_env(call_env)
+    stack_frame = StackFrame(object_def, 'self')
+    stack_frame.symbol_stack.push(object_def.field_table)
+    push_stack_frame(stack_frame)
     
     # Initialize constants
     for val_def in class_def.val_definitions:
@@ -199,7 +199,7 @@ def _init_object_def_from_class_def(object_def, class_def):
     for var_def in class_def.var_definitions:
         object_def.add_var(var_def.name, var_def.init_expr())
         
-    pop_call_env()
+    pop_stack_frame()
         
     object_def.set_typeobj(class_def)
 
@@ -277,9 +277,9 @@ _PRIMITIVE_OPERATION_FUNCTIONS = {
 def _make_primitive_op_method_def(operation):
     
     def callable_content():
-        call_env = peek_call_env()
-        selfobj = call_env.symbol_stack['self']
-        other = call_env.symbol_stack['other']
+        stack_frame = peek_stack_frame()
+        selfobj = stack_frame.symbol_stack['self']
+        other = stack_frame.symbol_stack['other']
         result = _PRIMITIVE_OPERATION_FUNCTIONS[operation](selfobj.primitive, other.primitive)
         new_object = get_builtin(selfobj.typeobj.name).hook_table['()']()
         new_object.primitive = result
@@ -311,7 +311,7 @@ def _make_string_class():
     
     classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS['+'])
     
-    string_callable_content = lambda: peek_call_env().symbol_stack['self']
+    string_callable_content = lambda: peek_stack_frame().symbol_stack['self']
     string_prop_def = PropertyDefinition('string', getter_method_def=MethodDefinition('get', string_callable_content))
     classdef.add_property_definition(string_prop_def)
     
@@ -334,7 +334,7 @@ def _make_numeric_class(class_name, converter):
     for operation in ['*', '/', '+', '-']:
         classdef.add_hook_definition(_PRIMITIVE_OPERATION_METHOD_DEFS[operation])
         
-    string_callable_content = lambda: make_string(str(peek_call_env().symbol_stack['self'].primitive))
+    string_callable_content = lambda: make_string(str(peek_stack_frame().symbol_stack['self'].primitive))
     string_prop_def = PropertyDefinition('string', getter_method_def=MethodDefinition('get', string_callable_content))
     classdef.add_property_definition(string_prop_def)
     
@@ -369,7 +369,7 @@ def _make_true():
 
 def _make_function_print():
     def fn_print():
-        value = peek_call_env().symbol_stack['value'].public_table['string']
+        value = peek_stack_frame().symbol_stack['value'].public_table['string']
         print(value.primitive)
     
     fn = Function('print', fn_print, 'value')
