@@ -1,19 +1,10 @@
 __all__ = [
         # Exceptions
         'ArityError', 'ConstantValueError', 'OperationNotSupportedError',
-        'ExitBlockException',
         'ExecutionError', 'FatalError',
         'SymbolContentError', 'SymbolError', 'SymbolUnknownError', 'SyntaxError'
     ]
     
-class ExitBlockException(Exception):
-    def __init__(self, value):
-        self.__value = value
-        
-    @property
-    def value(self):
-        return self.__value
-
 class ExecutionError(Exception): pass
    
 class ArityError(ExecutionError): pass

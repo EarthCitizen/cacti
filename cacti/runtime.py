@@ -167,6 +167,7 @@ class StackFrame:
         self.__owner = owner
         self.__name = name
         self.__selfobj = selfobj
+        self.__exit_flag = False
         self.__symbol_stack = SymbolTableStack()
         self.__symbol_stack.push(get_builtin_table())
         self.__symbol_stack.push(SymbolTable())
@@ -186,6 +187,13 @@ class StackFrame:
     @property
     def selfobj(self):
         return self.__selfobj
+    
+    @property
+    def exit_flag(self):
+        return self.__exit_flag
+    
+    def mark_exit_flag(self):
+        self.__exit_flag = True
     
     def __copy__(self):
         inst_copy = self.__class__(self.__owner, self.__name, self.__selfobj)
