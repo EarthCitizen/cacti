@@ -1,18 +1,20 @@
-function foo () {var t = 5; return t}
+function foo () {var t = 5; return t; print("After FUNCTION return")}
 
 print(foo())
 
 
 var y = 10
 
-var c = closure() { return y }
+var c = closure() { return y; print("After CLOSURE return") }
 
 print(c())
 
 
 class X {
     method foo(p) {
+    	print("Before return statement")
         return p * 10
+        print("After return statement")
     }
 }
 

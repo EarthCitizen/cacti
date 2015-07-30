@@ -271,7 +271,8 @@ class ReturnStatement(Evaluable):
         
     def eval(self):
         value = self.__value_expr()
-        raise ce.ExitBlockException(value)
+        peek_stack_frame().mark_exit_flag()
+        return value
         
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, repr(self.__value_expr))
@@ -312,11 +313,12 @@ class Block(Evaluable):
 
     def eval(self):
         value = None
-        try:
-            for e in self.__exprs:
-                value = e()
-        except ce.ExitBlockException as e:
-            value = e.value
+        stack_frame = peek_stack_frame()
+        
+        for e in self.__exprs:
+            value = e()
+            if stack_frame.exit_flag:
+                break
         
         return value
             
