@@ -151,7 +151,7 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_call_env().symbol_stack['self'].to_string()))),
+                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].to_string()))),
                     }
             }
     }
