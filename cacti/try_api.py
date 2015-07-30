@@ -7,8 +7,8 @@ from copy import copy
 
 initialize_builtins()
 mainobj = make_main()
-call_env = CallEnv(mainobj, mainobj.name)
-push_call_env(call_env)
+call_env = StackFrame(mainobj, mainobj.name)
+push_stack_frame(call_env)
 
 #print(make_string('foo')['id']['type']['name'])
 

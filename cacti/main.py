@@ -15,8 +15,8 @@ configure_logging()
 
 def set_up_main_call_env():
     mainobj = make_main()
-    call_env = CallEnv(mainobj, mainobj.name)
-    push_call_env(call_env)
+    call_env = StackFrame(mainobj, mainobj.name)
+    push_stack_frame(call_env)
 
 def main():
     initialize_builtins()

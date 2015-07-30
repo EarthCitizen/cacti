@@ -6,7 +6,7 @@ initialize_builtins()
 
 @pytest.fixture
 def set_up_env():
-        call_env = CallEnv(make_object(), 'test')
+        call_env = StackFrame(make_object(), 'test')
         table = SymbolTable()
         call_env.symbol_stack.push(table)
-        push_call_env(call_env)
+        push_stack_frame(call_env)
