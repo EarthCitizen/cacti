@@ -342,30 +342,32 @@ def _make_numeric_class(class_name, converter):
     
 def _make_nothing():
     typedef_superobj = make_object()
-    nothing_typedef = TypeDefinition(typedef_superobj, 'Nothing')
-    nothing_typedef.set_typeobj(get_type('Type'))
-    nothing_superobj = make_object()
-    nothing = ObjectDefinition(nothing_superobj, name='nothing')
-    nothing.set_typeobj(nothing_typedef)
-    add_builtin(nothing.name, nothing)
+    typedef = TypeDefinition(typedef_superobj, 'Nothing')
+    typedef.set_typeobj(get_type('Type'))
+    superobj = make_object()
+    nothing_obj = ObjectDefinition(superobj, name='nothing')
+    nothing_obj.set_typeobj(typedef)
+    add_builtin(nothing_obj.name, nothing_obj)
+
+def _make_boolean():
+    typedef_superobj = make_object()
+    typedef = TypeDefinition(typedef_superobj, 'Boolean')
+    typedef.set_typeobj(get_type('Type'))
+    add_type(typedef.name, typedef)
     
 def _make_false():
-    typedef_superobj = make_object()
-    nothing_typedef = TypeDefinition(typedef_superobj, 'False')
-    nothing_typedef.set_typeobj(get_type('Type'))
-    nothing_superobj = make_object()
-    nothing = ObjectDefinition(nothing_superobj, name='false')
-    nothing.set_typeobj(nothing_typedef)
-    add_builtin(nothing.name, nothing)
+    typedef = get_type('Boolean')
+    superobj = make_object()
+    false_obj = ObjectDefinition(superobj, name='false')
+    false_obj.set_typeobj(typedef)
+    add_builtin(false_obj.name, false_obj)
     
 def _make_true():
-    typedef_superobj = make_object()
-    nothing_typedef = TypeDefinition(typedef_superobj, 'True')
-    nothing_typedef.set_typeobj(get_type('Type'))
-    nothing_superobj = make_object()
-    nothing = ObjectDefinition(nothing_superobj, name='true')
-    nothing.set_typeobj(nothing_typedef)
-    add_builtin(nothing.name, nothing)
+    typedef = get_type('Boolean')
+    superobj = make_object()
+    true_obj = ObjectDefinition(superobj, name='true')
+    true_obj.set_typeobj(typedef)
+    add_builtin(true_obj.name, true_obj)
 
 def _make_function_print():
     def fn_print():
@@ -404,6 +406,7 @@ def initialize_builtins():
     #_make_type('Method')
     _make_string_class()
     _make_nothing()
+    _make_boolean()
     _make_false()
     _make_true()
     _make_function_print()
