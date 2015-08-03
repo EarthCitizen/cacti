@@ -1,3 +1,6 @@
-print(true.type)
-print(true.type.type)
-print(1.type.type)
+print(1.type) # Class Integer
+print(1.type.type) # Type Class
+print(1.type.type.type) # Type Type
+print(1.type.type.type.type) # Type Type
+print("Hello" + string(123))
+

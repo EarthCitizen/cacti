@@ -7,7 +7,7 @@ from cacti.lang import *
 from cacti.exceptions import *
 
 __all__ = [
-    'get_type', 'get_builtin', 'get_builtin_superobj', 'get_builtin_table',
+    'get_type', 'get_builtin', 'get_builtin_table',
     'initialize_builtins',
     'make_class', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string'
 ]
@@ -234,7 +234,7 @@ def _bootstrap_basic_types():
     __BUILTIN_SUPEROBJ = ObjectDefinition(None)
     
     
-    __typedef_typedef_superobj = __BUILTIN_SUPEROBJ #__object_classdef.hook_table['()'].call()
+    __typedef_typedef_superobj = ObjectDefinition(None)
     __typedef_typedef = TypeDefinition.__new__(TypeDefinition)
     __typedef_typedef.set_name('Type')
     add_type('Type', __typedef_typedef)
@@ -243,13 +243,13 @@ def _bootstrap_basic_types():
     
     
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    __object_classdef_superobj = __BUILTIN_SUPEROBJ
+    __object_classdef_superobj = ObjectDefinition(None)
     __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
     _init_class_def_from_data(__object_classdef)
     _init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
     
     
-    __classdef_typedef_superobj = __BUILTIN_SUPEROBJ #__object_classdef.hook_table['()'].call()
+    __classdef_typedef_superobj = ObjectDefinition(None)
     __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
     __classdef_typedef.set_typeobj(__typedef_typedef)
     
@@ -260,7 +260,7 @@ def _bootstrap_basic_types():
     add_type(__classdef_typedef.name, __classdef_typedef)
     
 def _make_type(type_name):
-    superobj = get_builtin_superobj() #get_builtin('Object').hook_table['()'].call()
+    superobj = ObjectDefinition(None)
     typedef = TypeDefinition.__new__(TypeDefinition)
     typedef.set_name(type_name)
     add_type(typedef.name, typedef)
@@ -371,10 +371,18 @@ def _make_true():
 
 def _make_function_print():
     def fn_print():
-        value = peek_stack_frame().symbol_stack['value'].public_table['string']
+        value = peek_stack_frame().symbol_stack['value'].to_lang_string()
         print(value.primitive)
     
     fn = Function('print', fn_print, 'value')
+    add_builtin(fn.name, fn)
+    
+def _make_function_string():
+    def fn_string():
+        value = peek_stack_frame().symbol_stack['value'].to_lang_string()
+        return value
+    
+    fn = Function('string', fn_string, 'value')
     add_builtin(fn.name, fn)
     
 def _make_function_log_debug():
@@ -410,6 +418,7 @@ def initialize_builtins():
     _make_false()
     _make_true()
     _make_function_print()
+    _make_function_string()
     _make_function_log_debug()
     _make_function_log_info()
     _make_numeric_class('Integer', int)

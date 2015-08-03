@@ -164,6 +164,10 @@ class ObjectDefinition:
     
     def to_repr(self):
         return self.to_string_multi(self.selfobj)
+        
+    def to_lang_string(self):
+        from cacti.builtin import make_string
+        return make_string(self.to_string())
     
     # This is a workaround to the fact that
     # str() will not call the __str__() that
