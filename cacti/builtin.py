@@ -35,8 +35,8 @@ def make_post_bootstrap_object():
     return obj
     
 def get_method_superobj():
+    global _METHOD_SUPEROBJ
     if not _METHOD_SUPEROBJ:
-        global _METHOD_SUPEROBJ
         _METHOD_SUPEROBJ = make_post_bootstrap_object()
     return _METHOD_SUPEROBJ
 
@@ -248,9 +248,21 @@ def get_builtin_table():
 
 def _bootstrap_basic_types():
     # Make the root of all types
-    __typedef_typedef_superobj = make_post_bootstrap_object()
-    __typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
-    __typedef_typedef.set_typeobj(__typedef_typedef)
+    
+    type_type_superobj = make_post_bootstrap_object()
+    type_type = TypeDefinition.__new__(TypeDefinition)
+    type_type.set_name('Type')
+    add_type(type_type.name, type_type)
+    
+    method_type_superobj = make_post_bootstrap_object()
+    method_type = TypeDefinition.__new__(TypeDefinition)
+    method_type.set_name('Method')
+    add_type(method_type.name, method_type)
+    
+    # METHOD TYPE MUST BE INIT FIRST BECAUSE TypeDefinition
+    # USES A METHOD FOR A PROPERTY
+    method_type.__init__(method_type_superobj, method_type.name, typeobj=type_type)
+    type_type.__init__(type_type_superobj, type_type.name, typeobj=type_type)
     
     
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
@@ -261,27 +273,25 @@ def _bootstrap_basic_types():
     # Make Class used to instantiate Object
     __classdef_typedef_superobj = make_post_bootstrap_object()
     __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
-    __classdef_typedef.set_typeobj(__typedef_typedef)
+    __classdef_typedef.set_typeobj(type_type)
     
     __object_classdef.set_typeobj(__classdef_typedef)
-    
     
     add_builtin(__object_classdef.name, __object_classdef)
     
     add_type(__classdef_typedef.name, __classdef_typedef)
     
-    add_type(__typedef_typedef.name, __typedef_typedef)
-    
     for obj in _POST_BOOTSTRAP_OBJECT_INIT:
         _init_object_def_from_class_def(obj, __object_classdef)
     
 def _make_type(type_name):
-    superobj = ObjectDefinition(None)
+    superobj = make_object()
     typedef = TypeDefinition.__new__(TypeDefinition)
     typedef.set_name(type_name)
     add_type(typedef.name, typedef)
     typedef.__init__(superobj, type_name)
     typedef.set_typeobj(get_type('Type'))
+    return typedef
 
 _PRIMITIVE_OPERATION_FUNCTIONS = {
         '*': operator.mul,

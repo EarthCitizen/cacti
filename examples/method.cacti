@@ -1,0 +1,9 @@
+class A {
+	method foo() {}
+	method boo() {}
+}
+
+var a = A()
+
+print(a.foo.type)
+print(a.boo.type)
