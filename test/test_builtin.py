@@ -4,11 +4,6 @@ from cacti.ast import *
 from cacti.builtin import *
 from cacti.lang import *
 
-#def test_output(capsys):
-#    print("Hello")
-#    out, err = capsys.readouterr()
-#    assert "Hello\n" == out
-
 @pytest.mark.usefixtures('set_up_env')    
 class TestPrint:
     def test_sends_output_to_stdout(self, capsys):
@@ -25,4 +20,37 @@ class TestPrint:
         fn()
         out, err = capsys.readouterr()
         assert "This is the custom string\n" == out
+
+class TestType:
+    def test_self_correct(self):
+        _type = get_type('Type')
+        type_self = _type.selfobj
+        assert id(_type) == id(type_self)
+        
+    def test_type_correct(self):
+        _type = get_type('Type')
+        type_type = _type.typeobj
+        assert id(_type) == id(type_type)
+        
+    def test_self_type_correct(self):
+        self_type = get_type('Type').selfobj.typeobj
+        type_type = get_type('Type')
+        assert id(self_type) == id(type_type)
+
+class TestClass:        
+    def test_self_correct(self):
+        _type = get_type('Type')
+        type_self = _type.selfobj
+        assert id(_type) == id(type_self)
+    
+    def test_type_correct(self):
+        class_type = get_type('Class').typeobj
+        type_type = get_type('Type')
+        assert id(class_type) == id(type_type)
+        
+    def test_self_type_correct(self):
+        self_type = get_type('Class').selfobj.typeobj
+        type_type = get_type('Type')
+        assert id(self_type) == id(type_type)
+
         

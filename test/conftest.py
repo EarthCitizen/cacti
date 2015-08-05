@@ -6,6 +6,7 @@ initialize_builtins()
 
 @pytest.fixture
 def set_up_env():
+        clear_stack()
         stack_frame = StackFrame(make_object(), 'test')
         table = SymbolTable()
         stack_frame.symbol_stack.push(table)

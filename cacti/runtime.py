@@ -7,7 +7,7 @@ from cacti.debug import get_logger
 
 __all__ = [
     # Functions
-    'isvalidhook', 'isvalidsymbol', 'peek_stack_frame', 'pop_stack_frame', 'push_stack_frame',
+    'isvalidhook', 'isvalidsymbol', 'clear_stack', 'peek_stack_frame', 'pop_stack_frame', 'push_stack_frame',
     
     # Classes
     'StackFrame', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
@@ -133,6 +133,10 @@ def __stack_info(prefix, stack_frame):
     
 lvl_str = '\t'
 lvl = 0
+
+def clear_stack():
+    global STACK
+    STACK = collections.deque()
 
 def push_stack_frame(stack_frame):
     global lvl_str

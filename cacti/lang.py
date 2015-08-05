@@ -249,8 +249,8 @@ class Method(ObjectDefinition, _Call):
         
         self.logger.debug("Create new method: owner={} name={}".format(str(self.__owner), str(self.__name)))
         
-        from cacti.builtin import get_builtin_superobj, get_type, make_object
-        superobj = get_builtin_superobj()
+        from cacti.builtin import get_method_superobj, get_type, make_object
+        superobj = get_method_superobj()
         super().__init__(superobj, typeobj=get_type('Method'), name=name)
         
         # Method () does not need to be bound to self as there is
@@ -303,9 +303,6 @@ class TypeDefinition(ObjectDefinition):
         gc = MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].name))
         self.add_property(PropertyDefinition('name', getter_method_def=gc))
     
-    #def __str__(self):
-    #    return '{}<{}>'.format('Type', self.name)
-        
 class ClassDefinition(TypeDefinition):
     def __init__(self, superobj, name, *, typeobj=None, superclass=None):
         super().__init__(superobj, typeobj=typeobj, name=name)

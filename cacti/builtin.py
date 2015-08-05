@@ -7,17 +7,38 @@ from cacti.lang import *
 from cacti.exceptions import *
 
 __all__ = [
-    'get_type', 'get_builtin', 'get_builtin_table',
+    'get_type', 'get_builtin', 'get_builtin_table', 'get_method_superobj',
     'initialize_builtins',
     'make_class', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string'
 ]
 
+_POST_BOOTSTRAP_OBJECT_INIT = []
+_METHOD_SUPEROBJ = None
+
 def make_object():
     logger = get_logger(make_object)
     logger.debug('Start')
-    obj = get_builtin('Object').hook_table['()'].call()
+    if 'Object' in _BUILTINS:
+        obj = get_builtin('Object').hook_table['()'].call()
+    else:
+        obj = make_post_bootstrap_object()
     logger.debug('Returning: ' + str(obj))
     return obj
+    
+def make_post_bootstrap_object():
+    logger = get_logger(make_object)
+    logger.debug('Start')
+    obj = ObjectDefinition(None)
+    global _POST_BOOTSTRAP_OBJECT_INIT
+    _POST_BOOTSTRAP_OBJECT_INIT += [obj]
+    logger.debug('Returning: ' + str(obj))
+    return obj
+    
+def get_method_superobj():
+    if not _METHOD_SUPEROBJ:
+        global _METHOD_SUPEROBJ
+        _METHOD_SUPEROBJ = make_post_bootstrap_object()
+    return _METHOD_SUPEROBJ
 
 def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, method_defs=None):
     logger = get_logger(make_class)
@@ -151,7 +172,6 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].to_string()))),
                     }
             }
     }
@@ -205,7 +225,6 @@ def _init_object_def_from_class_def(object_def, class_def):
 
 _TYPES = SymbolTable()
 _BUILTINS = SymbolTable()
-__BUILTIN_SUPEROBJ = None
 
 def add_type(symbol_name, object_instance):
     _TYPES.add_symbol(symbol_name, ConstantValueHolder(object_instance))
@@ -224,40 +243,37 @@ def add_builtin(symbol_name, object_instance):
 def get_builtin(symbol_name):
     return _BUILTINS[symbol_name]
     
-def get_builtin_superobj():
-    return __BUILTIN_SUPEROBJ
-
 def get_builtin_table():
     return _BUILTINS
 
 def _bootstrap_basic_types():
-    __BUILTIN_SUPEROBJ = ObjectDefinition(None)
-    
-    
-    __typedef_typedef_superobj = ObjectDefinition(None)
-    __typedef_typedef = TypeDefinition.__new__(TypeDefinition)
-    __typedef_typedef.set_name('Type')
-    add_type('Type', __typedef_typedef)
-    __typedef_typedef.__init__(__typedef_typedef_superobj, 'Type')
+    # Make the root of all types
+    __typedef_typedef_superobj = make_post_bootstrap_object()
+    __typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
     __typedef_typedef.set_typeobj(__typedef_typedef)
     
     
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    __object_classdef_superobj = ObjectDefinition(None)
+    __object_classdef_superobj = make_post_bootstrap_object()
     __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
     _init_class_def_from_data(__object_classdef)
-    _init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
     
-    
-    __classdef_typedef_superobj = ObjectDefinition(None)
+    # Make Class used to instantiate Object
+    __classdef_typedef_superobj = make_post_bootstrap_object()
     __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
     __classdef_typedef.set_typeobj(__typedef_typedef)
     
     __object_classdef.set_typeobj(__classdef_typedef)
     
+    
     add_builtin(__object_classdef.name, __object_classdef)
     
     add_type(__classdef_typedef.name, __classdef_typedef)
+    
+    add_type(__typedef_typedef.name, __typedef_typedef)
+    
+    for obj in _POST_BOOTSTRAP_OBJECT_INIT:
+        _init_object_def_from_class_def(obj, __object_classdef)
     
 def _make_type(type_name):
     superobj = ObjectDefinition(None)
