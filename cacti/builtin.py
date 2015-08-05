@@ -7,17 +7,38 @@ from cacti.lang import *
 from cacti.exceptions import *
 
 __all__ = [
-    'get_type', 'get_builtin', 'get_builtin_superobj', 'get_builtin_table',
+    'get_type', 'get_builtin', 'get_builtin_table', 'get_method_superobj',
     'initialize_builtins',
     'make_class', 'make_float', 'make_integer', 'make_main', 'make_object', 'make_string'
 ]
 
+_POST_BOOTSTRAP_OBJECT_INIT = []
+_METHOD_SUPEROBJ = None
+
 def make_object():
     logger = get_logger(make_object)
     logger.debug('Start')
-    obj = get_builtin('Object').hook_table['()'].call()
+    if 'Object' in _BUILTINS:
+        obj = get_builtin('Object').hook_table['()'].call()
+    else:
+        obj = make_post_bootstrap_object()
     logger.debug('Returning: ' + str(obj))
     return obj
+    
+def make_post_bootstrap_object():
+    logger = get_logger(make_object)
+    logger.debug('Start')
+    obj = ObjectDefinition(None)
+    global _POST_BOOTSTRAP_OBJECT_INIT
+    _POST_BOOTSTRAP_OBJECT_INIT += [obj]
+    logger.debug('Returning: ' + str(obj))
+    return obj
+    
+def get_method_superobj():
+    if not _METHOD_SUPEROBJ:
+        global _METHOD_SUPEROBJ
+        _METHOD_SUPEROBJ = make_post_bootstrap_object()
+    return _METHOD_SUPEROBJ
 
 def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, method_defs=None):
     logger = get_logger(make_class)
@@ -151,7 +172,6 @@ BUILTIN_INIT_DATA = {
                     },
                     
                 'property_defs': {
-                        PropertyDefinition('string', getter_method_def=MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].to_string()))),
                     }
             }
     }
@@ -205,7 +225,6 @@ def _init_object_def_from_class_def(object_def, class_def):
 
 _TYPES = SymbolTable()
 _BUILTINS = SymbolTable()
-__BUILTIN_SUPEROBJ = None
 
 def add_type(symbol_name, object_instance):
     _TYPES.add_symbol(symbol_name, ConstantValueHolder(object_instance))
@@ -224,43 +243,40 @@ def add_builtin(symbol_name, object_instance):
 def get_builtin(symbol_name):
     return _BUILTINS[symbol_name]
     
-def get_builtin_superobj():
-    return __BUILTIN_SUPEROBJ
-
 def get_builtin_table():
     return _BUILTINS
 
 def _bootstrap_basic_types():
-    __BUILTIN_SUPEROBJ = ObjectDefinition(None)
-    
-    
-    __typedef_typedef_superobj = __BUILTIN_SUPEROBJ #__object_classdef.hook_table['()'].call()
-    __typedef_typedef = TypeDefinition.__new__(TypeDefinition)
-    __typedef_typedef.set_name('Type')
-    add_type('Type', __typedef_typedef)
-    __typedef_typedef.__init__(__typedef_typedef_superobj, 'Type')
+    # Make the root of all types
+    __typedef_typedef_superobj = make_post_bootstrap_object()
+    __typedef_typedef = TypeDefinition(__typedef_typedef_superobj, 'Type')
     __typedef_typedef.set_typeobj(__typedef_typedef)
     
     
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    __object_classdef_superobj = __BUILTIN_SUPEROBJ
+    __object_classdef_superobj = make_post_bootstrap_object()
     __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
     _init_class_def_from_data(__object_classdef)
-    _init_object_def_from_class_def(__object_classdef_superobj, __object_classdef)
     
-    
-    __classdef_typedef_superobj = __BUILTIN_SUPEROBJ #__object_classdef.hook_table['()'].call()
+    # Make Class used to instantiate Object
+    __classdef_typedef_superobj = make_post_bootstrap_object()
     __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
     __classdef_typedef.set_typeobj(__typedef_typedef)
     
     __object_classdef.set_typeobj(__classdef_typedef)
     
+    
     add_builtin(__object_classdef.name, __object_classdef)
     
     add_type(__classdef_typedef.name, __classdef_typedef)
     
+    add_type(__typedef_typedef.name, __typedef_typedef)
+    
+    for obj in _POST_BOOTSTRAP_OBJECT_INIT:
+        _init_object_def_from_class_def(obj, __object_classdef)
+    
 def _make_type(type_name):
-    superobj = get_builtin_superobj() #get_builtin('Object').hook_table['()'].call()
+    superobj = ObjectDefinition(None)
     typedef = TypeDefinition.__new__(TypeDefinition)
     typedef.set_name(type_name)
     add_type(typedef.name, typedef)
@@ -342,37 +358,47 @@ def _make_numeric_class(class_name, converter):
     
 def _make_nothing():
     typedef_superobj = make_object()
-    nothing_typedef = TypeDefinition(typedef_superobj, 'Nothing')
-    nothing_typedef.set_typeobj(get_type('Type'))
-    nothing_superobj = make_object()
-    nothing = ObjectDefinition(nothing_superobj, name='nothing')
-    nothing.set_typeobj(nothing_typedef)
-    add_builtin(nothing.name, nothing)
+    typedef = TypeDefinition(typedef_superobj, 'Nothing')
+    typedef.set_typeobj(get_type('Type'))
+    superobj = make_object()
+    nothing_obj = ObjectDefinition(superobj, name='nothing')
+    nothing_obj.set_typeobj(typedef)
+    add_builtin(nothing_obj.name, nothing_obj)
+
+def _make_boolean():
+    typedef_superobj = make_object()
+    typedef = TypeDefinition(typedef_superobj, 'Boolean')
+    typedef.set_typeobj(get_type('Type'))
+    add_type(typedef.name, typedef)
     
 def _make_false():
-    typedef_superobj = make_object()
-    nothing_typedef = TypeDefinition(typedef_superobj, 'False')
-    nothing_typedef.set_typeobj(get_type('Type'))
-    nothing_superobj = make_object()
-    nothing = ObjectDefinition(nothing_superobj, name='false')
-    nothing.set_typeobj(nothing_typedef)
-    add_builtin(nothing.name, nothing)
+    typedef = get_type('Boolean')
+    superobj = make_object()
+    false_obj = ObjectDefinition(superobj, name='false')
+    false_obj.set_typeobj(typedef)
+    add_builtin(false_obj.name, false_obj)
     
 def _make_true():
-    typedef_superobj = make_object()
-    nothing_typedef = TypeDefinition(typedef_superobj, 'True')
-    nothing_typedef.set_typeobj(get_type('Type'))
-    nothing_superobj = make_object()
-    nothing = ObjectDefinition(nothing_superobj, name='true')
-    nothing.set_typeobj(nothing_typedef)
-    add_builtin(nothing.name, nothing)
+    typedef = get_type('Boolean')
+    superobj = make_object()
+    true_obj = ObjectDefinition(superobj, name='true')
+    true_obj.set_typeobj(typedef)
+    add_builtin(true_obj.name, true_obj)
 
 def _make_function_print():
     def fn_print():
-        value = peek_stack_frame().symbol_stack['value'].public_table['string']
+        value = peek_stack_frame().symbol_stack['value'].to_lang_string()
         print(value.primitive)
     
     fn = Function('print', fn_print, 'value')
+    add_builtin(fn.name, fn)
+    
+def _make_function_string():
+    def fn_string():
+        value = peek_stack_frame().symbol_stack['value'].to_lang_string()
+        return value
+    
+    fn = Function('string', fn_string, 'value')
     add_builtin(fn.name, fn)
     
 def _make_function_log_debug():
@@ -404,9 +430,11 @@ def initialize_builtins():
     #_make_type('Method')
     _make_string_class()
     _make_nothing()
+    _make_boolean()
     _make_false()
     _make_true()
     _make_function_print()
+    _make_function_string()
     _make_function_log_debug()
     _make_function_log_info()
     _make_numeric_class('Integer', int)
