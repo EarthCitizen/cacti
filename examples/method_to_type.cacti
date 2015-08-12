@@ -1,0 +1,20 @@
+#log_debug()
+
+class Foo {
+	method foo() {5}
+}
+
+var f = Foo()
+
+var x = f.foo
+
+print(x())
+print(x().type)
+print(x.type)
+print(x.type.type)
+print(Foo.type)
+print(Foo.type.name)
+print(Foo.type.type)
+print(true.type)
+print(true)
+print(nothing.type)

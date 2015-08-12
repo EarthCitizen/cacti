@@ -184,12 +184,19 @@ class ObjectDefinition:
             ret_val = "{}<'{}'>".format(selfobj.typeobj.name, selfobj.name)
         
         return ret_val
+    
+class TypeDefinition(ObjectDefinition):
+    def __init__(self, superobj, name, *, typeobj=None):
+        super().__init__(superobj, typeobj=typeobj, name=name)
+        
+        from cacti.builtin import make_string
+        self.property_table.add_symbol('name', PropertyGetValueHolder(lambda: make_string(self.name)))
 
 class PrimitiveObjectDefinition(ObjectDefinition):
     def __init__(self, superobj, *, typeobj=None, name=''):
         super().__init__(superobj, typeobj=typeobj, name=name)
 
-class Closure(ObjectDefinition):
+class Closure(TypeDefinition):
     def __init__(self, stack_frame, content, *param_names):
         assert isinstance(stack_frame, StackFrame)
         
@@ -199,9 +206,11 @@ class Closure(ObjectDefinition):
         self.__content = content
         self.__param_names = param_names
         
-        from cacti.builtin import get_builtin, get_type
-        superobj = get_builtin('Object').hook_table['()'].call()
-        super().__init__(superobj, typeobj=get_type('Closure'))
+        from cacti.builtin import get_type
+        type_type = get_type('Type')
+        closure_type = get_type('Closure')
+        super().__init__(type_type, None, typeobj=closure_type)
+        
         self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
     def call(self, *params):
@@ -210,7 +219,7 @@ class Closure(ObjectDefinition):
         pop_stack_frame()
         return return_value
         
-class Function(ObjectDefinition, _Call):
+class Function(TypeDefinition, _Call):
     def __init__(self, name, content, *param_names):
         #assert isinstance(function_callable, Callable)
         
@@ -222,9 +231,10 @@ class Function(ObjectDefinition, _Call):
         
         self.__callable = Callable(self.__content, *self.__param_names)
         
-        from cacti.builtin import get_type, make_object
-        superobj = make_object()
-        super().__init__(superobj, typeobj=get_type('Function'), name=self.__name)
+        from cacti.builtin import get_type
+        type_type = get_type('Type')
+        function_type = get_type('Function')
+        super().__init__(type_type, name, typeobj=function_type)
         
         self.hook_table.add_symbol('()', ConstantValueHolder(self))
         
@@ -234,7 +244,7 @@ class Function(ObjectDefinition, _Call):
         pop_stack_frame()
         return return_value
         
-class Method(ObjectDefinition, _Call):
+class Method(TypeDefinition, _Call):
     def __init__(self, owner, name, content, *param_names):
         assert isinstance(owner, ObjectDefinition)
         
@@ -249,9 +259,10 @@ class Method(ObjectDefinition, _Call):
         
         self.logger.debug("Create new method: owner={} name={}".format(str(self.__owner), str(self.__name)))
         
-        from cacti.builtin import get_method_superobj, get_type, make_object
-        superobj = get_method_superobj()
-        super().__init__(superobj, typeobj=get_type('Method'), name=name)
+        from cacti.builtin import get_type
+        type_type = get_type('Type')
+        method_type = get_type('Method')
+        super().__init__(type_type, name, typeobj=method_type)
         
         # Method () does not need to be bound to self as there is
         # no actual code in which it will refer to itself.
@@ -295,13 +306,6 @@ class Method(ObjectDefinition, _Call):
         
         pop_stack_frame()
         return return_value
-        
-class TypeDefinition(ObjectDefinition):
-    def __init__(self, superobj, name, *, typeobj=None):
-        from cacti.builtin import make_string
-        super().__init__(superobj, typeobj=typeobj, name=name)
-        gc = MethodDefinition('get', lambda: make_string(peek_stack_frame().symbol_stack['self'].name))
-        self.add_property(PropertyDefinition('name', getter_method_def=gc))
     
 class ClassDefinition(TypeDefinition):
     def __init__(self, superobj, name, *, typeobj=None, superclass=None):
