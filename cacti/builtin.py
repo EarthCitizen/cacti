@@ -257,12 +257,10 @@ def _bootstrap_basic_types():
     add_type(method_type.name, method_type)
     
     # Make Class used to instantiate Object
-    #__classdef_typedef_superobj = make_post_bootstrap_object()
     __classdef_typedef = TypeDefinition(None, 'Class', typeobj=type_type)
     add_type(__classdef_typedef.name, __classdef_typedef)
     
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    #__object_classdef_superobj = type_type #make_post_bootstrap_object()
     __object_classdef = ClassDefinition(None, 'Object', typeobj=__classdef_typedef)
     _init_class_def_from_data(__object_classdef)
     add_builtin(__object_classdef.name, __object_classdef)
