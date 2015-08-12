@@ -253,7 +253,6 @@ def _bootstrap_basic_types():
     add_type(type_type.name, type_type)
     
     method_type = TypeDefinition(None, 'Method', typeobj=type_type)
-    method_type.set_name('Method')
     add_type(method_type.name, method_type)
     
     # Make Class used to instantiate Object
