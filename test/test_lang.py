@@ -2,7 +2,7 @@ import pytest
 
 from cacti.runtime import *
 from cacti.lang import *
-from cacti.builtin import make_object, make_integer, make_string
+from cacti.builtin import get_type, make_object, make_integer, make_string
 from cacti.exceptions import SymbolError
 
 @pytest.mark.usefixtures('set_up_env')
@@ -63,6 +63,14 @@ class TestMethod:
     name = ['m1', 'm2']
     content = [dmy1, dmy2]
     param_names = [[], ['a', 'b']]
+    
+    def test_type(self):
+        m = Method(make_object(), 'test', self.dmy1)
+        assert get_type('Method') is m.typeobj
+        
+    def test_type_type(self):
+        m = Method(make_object(), 'test', self.dmy1)
+        assert get_type('Type') is m.typeobj.typeobj
     
     @pytest.mark.parametrize('owner1', owner)
     @pytest.mark.parametrize('owner2', owner)
