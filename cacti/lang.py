@@ -308,7 +308,9 @@ class Method(TypeDefinition, _Call):
         return return_value
     
 class ClassDefinition(TypeDefinition):
-    def __init__(self, superobj, name, *, typeobj=None, superclass=None):
+    def __init__(self, superobj, name, *, superclass=None):
+        from cacti.builtin import get_type
+        typeobj = get_type('Class')
         super().__init__(superobj, typeobj=typeobj, name=name)
         self.__superclass = superclass
         self.__hook_defs = []

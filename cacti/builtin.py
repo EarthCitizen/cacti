@@ -43,13 +43,12 @@ def get_method_superobj():
 def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, method_defs=None):
     logger = get_logger(make_class)
     logger.debug("name={}, superclass_name={}".format(repr(name), repr(superclass_name)))
-    typeobj = get_type('Class')
     stack_frame = peek_stack_frame()
     if stack_frame and (superclass_name in stack_frame.symbol_stack):
         superclass = stack_frame.symbol_stack[superclass_name]
     else:
         superclass = get_builtin(superclass_name)
-    classdef = ClassDefinition(None, name, typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(None, name, superclass=superclass)
     
     classdef.add_hook(MethodDefinition('()', _hook_new_callable_content))
     
@@ -260,7 +259,7 @@ def _bootstrap_basic_types():
     add_type(__classdef_typedef.name, __classdef_typedef)
     
     # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    __object_classdef = ClassDefinition(None, 'Object', typeobj=__classdef_typedef)
+    __object_classdef = ClassDefinition(None, 'Object')
     _init_class_def_from_data(__object_classdef)
     add_builtin(__object_classdef.name, __object_classdef)
     
@@ -299,10 +298,8 @@ _PRIMITIVE_OPERATION_METHOD_DEFS = {
     }
 
 def _make_string_class():
-    superobj = make_object()
-    typeobj = get_type('Class')
     superclass = get_builtin('Object')
-    classdef = ClassDefinition(superobj, 'String', typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(None, 'String', superclass=superclass)
     
     def new_callable_content():
         obj = _hook_new_callable_content()
@@ -321,10 +318,8 @@ def _make_string_class():
     add_builtin(classdef.name, classdef)
 
 def _make_numeric_class(class_name, converter):
-    superobj = make_object()
-    typeobj = get_type('Class')
     superclass = get_builtin('Object')
-    classdef = ClassDefinition(superobj, class_name, typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(None, class_name, superclass=superclass)
     
     def new_callable_content():
         obj = _hook_new_callable_content()

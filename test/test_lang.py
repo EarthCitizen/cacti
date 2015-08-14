@@ -55,6 +55,42 @@ class TestObjectDefinition:
         assert subclass_obj['some_method'].hook_table['()']().primitive == "SUPER"
 
 @pytest.mark.usefixtures('set_up_env')
+class TestClassDefinition:
+    def dmy(self): pass
+    
+    def test_type(self):
+        c = ClassDefinition(None, 'test')
+        assert get_type('Class') is c.typeobj
+        
+    def test_type_type(self):
+        c = Function('test', self.dmy)
+        assert get_type('Type') is c.typeobj.typeobj
+
+@pytest.mark.usefixtures('set_up_env')
+class TestClosure:
+    def dmy(self): pass
+    
+    def test_type(self):
+        c = Closure(peek_stack_frame(), 'test', self.dmy)
+        assert get_type('Closure') is c.typeobj
+        
+    def test_type_type(self):
+        c = Function('test', self.dmy)
+        assert get_type('Type') is c.typeobj.typeobj
+
+@pytest.mark.usefixtures('set_up_env')
+class TestFunction:
+    def dmy(self): pass
+    
+    def test_type(self):
+        f = Function('test', self.dmy)
+        assert get_type('Function') is f.typeobj
+        
+    def test_type_type(self):
+        f = Function('test', self.dmy)
+        assert get_type('Type') is f.typeobj.typeobj
+
+@pytest.mark.usefixtures('set_up_env')
 class TestMethod:
     def dmy1(self): pass
     def dmy2(self): pass
