@@ -58,59 +58,6 @@ class Callable(_Call):
         self.logger.debug("Returning: {}".format(str(return_value)))
         return return_value
         
-# class ClosureBinding(_Call):
-#     def __init__(self, stack_frame, kallable):
-#         self.__call_env = copy.copy(stack_frame)
-#         self.__callable = kallable
-#        
-#     def call(self, *params):
-#         push_stack_frame(self.__call_env)
-#         return_value = self.__callable.call(*params)
-#         pop_stack_frame()
-#         return return_value
-
-# class FunctionBinding(_Call):
-#     def __init__(self, owner, name, kallable):
-#         self.__owner = owner
-#         self.__name = name
-#         self.__callable = kallable
-#        
-#     def call(self, *params):
-#         push_stack_frame(StackFrame(self.__owner, self.__name))
-#         return_value = self.__callable.call(*params)
-#         pop_stack_frame()
-#         return return_value
-        
-# class MethodBinding(_Call):
-#     def __init__(self, owner, method_def):
-#         self.logger = get_logger(self)
-#         self.__owner = owner
-#         self.__method_def = method_def
-#        
-#     def call(self, *params):
-#         self.logger.debug('Start method call')
-#         stack_frame = StackFrame(self.__owner, self.__method_def.name)
-#         push_stack_frame(stack_frame)
-#         self.logger.debug('Pushed new call env')
-#         super_self = stack_frame.symbol_stack.peek()
-#        
-#         selfobj = self.__owner.selfobj
-#         superobj = self.__owner.superobj
-#        
-#         self.logger.debug('Owner: {}'.format(str(self.__owner)))
-#        
-#         self.logger.debug('Adding self: ' + str(selfobj))
-#         super_self.add_symbol('self', ConstantValueHolder(selfobj))
-#        
-#         self.logger.debug('Adding super: ' + str(superobj))
-#         super_self.add_symbol('super', ConstantValueHolder(superobj))
-#        
-#         return_value = self.__method_def.callable.call(*params)
-#         self.logger.debug('Returning: ' + str(return_value))
-#        
-#         pop_stack_frame()
-#         return return_value
-
 STACK = collections.deque()
 
 __debug_stack = False

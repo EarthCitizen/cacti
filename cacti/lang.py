@@ -439,9 +439,3 @@ class VarDefinition:
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__, repr(self.__val_name), repr(self.__val_init_expr))
 
-# class Callable(ObjectDefinition):
-#     def check_arity(self, caller, *called_params):
-#         if self.arity != len(called_params):
-#             kwargs = {'caller': caller.type.name, 'method_name': self.__name, 'exp': self.arity, 'got': len(called_params)}
-#             raise SyntaxError("{caller}.{method_name}: Expected {exp} parameter(s) but received {got}".format(**kwargs))
-#     
