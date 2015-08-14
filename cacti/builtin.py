@@ -43,14 +43,12 @@ def get_method_superobj():
 def make_class(name, superclass_name='Object', *, val_defs=None, var_defs=None, method_defs=None):
     logger = get_logger(make_class)
     logger.debug("name={}, superclass_name={}".format(repr(name), repr(superclass_name)))
-    superobj = make_object()
-    typeobj = get_type('Class')
     stack_frame = peek_stack_frame()
     if stack_frame and (superclass_name in stack_frame.symbol_stack):
         superclass = stack_frame.symbol_stack[superclass_name]
     else:
         superclass = get_builtin(superclass_name)
-    classdef = ClassDefinition(superobj, name, typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(None, name, superclass=superclass)
     
     classdef.add_hook(MethodDefinition('()', _hook_new_callable_content))
     
@@ -249,48 +247,26 @@ def get_builtin_table():
 def _bootstrap_basic_types():
     # Make the root of all types
     
-    type_type_superobj = make_post_bootstrap_object()
-    type_type = TypeDefinition.__new__(TypeDefinition)
-    type_type.set_name('Type')
+    type_type = TypeDefinition(None, 'Type')
+    type_type.set_typeobj(type_type)
     add_type(type_type.name, type_type)
     
-    method_type_superobj = make_post_bootstrap_object()
-    method_type = TypeDefinition.__new__(TypeDefinition)
-    method_type.set_name('Method')
+    method_type = TypeDefinition(None, 'Method', typeobj=type_type)
     add_type(method_type.name, method_type)
     
-    # METHOD TYPE MUST BE INIT FIRST BECAUSE TypeDefinition
-    # USES A METHOD FOR A PROPERTY
-    method_type.__init__(method_type_superobj, method_type.name, typeobj=type_type)
-    type_type.__init__(type_type_superobj, type_type.name, typeobj=type_type)
-    
-    
-    # BOOTSTRAP THE CLASS DEFINITION FOR Object
-    __object_classdef_superobj = make_post_bootstrap_object()
-    __object_classdef = ClassDefinition(__object_classdef_superobj, 'Object')
-    _init_class_def_from_data(__object_classdef)
-    
     # Make Class used to instantiate Object
-    __classdef_typedef_superobj = make_post_bootstrap_object()
-    __classdef_typedef = TypeDefinition(__classdef_typedef_superobj, 'Class')
-    __classdef_typedef.set_typeobj(type_type)
-    
-    __object_classdef.set_typeobj(__classdef_typedef)
-    
-    add_builtin(__object_classdef.name, __object_classdef)
-    
+    __classdef_typedef = TypeDefinition(None, 'Class', typeobj=type_type)
     add_type(__classdef_typedef.name, __classdef_typedef)
     
-    for obj in _POST_BOOTSTRAP_OBJECT_INIT:
-        _init_object_def_from_class_def(obj, __object_classdef)
+    # BOOTSTRAP THE CLASS DEFINITION FOR Object
+    __object_classdef = ClassDefinition(None, 'Object')
+    _init_class_def_from_data(__object_classdef)
+    add_builtin(__object_classdef.name, __object_classdef)
     
 def _make_type(type_name):
-    superobj = make_object()
-    typedef = TypeDefinition.__new__(TypeDefinition)
-    typedef.set_name(type_name)
+    type_type = get_type('Type')
+    typedef = TypeDefinition(type_type, type_name, typeobj=type_type)
     add_type(typedef.name, typedef)
-    typedef.__init__(superobj, type_name)
-    typedef.set_typeobj(get_type('Type'))
     return typedef
 
 _PRIMITIVE_OPERATION_FUNCTIONS = {
@@ -322,10 +298,8 @@ _PRIMITIVE_OPERATION_METHOD_DEFS = {
     }
 
 def _make_string_class():
-    superobj = make_object()
-    typeobj = get_type('Class')
     superclass = get_builtin('Object')
-    classdef = ClassDefinition(superobj, 'String', typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(None, 'String', superclass=superclass)
     
     def new_callable_content():
         obj = _hook_new_callable_content()
@@ -344,10 +318,8 @@ def _make_string_class():
     add_builtin(classdef.name, classdef)
 
 def _make_numeric_class(class_name, converter):
-    superobj = make_object()
-    typeobj = get_type('Class')
     superclass = get_builtin('Object')
-    classdef = ClassDefinition(superobj, class_name, typeobj=typeobj, superclass=superclass)
+    classdef = ClassDefinition(None, class_name, superclass=superclass)
     
     def new_callable_content():
         obj = _hook_new_callable_content()
@@ -437,7 +409,6 @@ def initialize_builtins():
     _bootstrap_basic_types()
     _make_type('Function')
     _make_type('Closure')
-    #_make_type('Method')
     _make_string_class()
     _make_nothing()
     _make_boolean()
