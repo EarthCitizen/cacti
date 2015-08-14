@@ -18,3 +18,5 @@ print(Foo.type.type)
 print(true.type)
 print(true)
 print(nothing.type)
+
+print(5.type())
