@@ -55,12 +55,14 @@ class ObjectDefinition:
     def set_selfobj(self, selfobj):
         self.__selfobj = selfobj
         self.logger.debug("Set selfobj of '{}' to: '{}'".format(self, str(self.__selfobj)))
+        if self.__superobj:
+            self.__superobj.set_selfobj(selfobj)
         
     def set_superobj(self, superobj):
         self.__superobj = superobj
         self.logger.debug("Set superobj of '{}' to: '{}'".format(self, str(self.__superobj)))
         if self.__superobj:
-            self.__superobj.set_selfobj(self)
+            self.__superobj.set_selfobj(self.__selfobj)
     
     @property
     def field_table(self):
@@ -196,7 +198,7 @@ class PrimitiveObjectDefinition(ObjectDefinition):
     def __init__(self, superobj, *, typeobj=None, name=''):
         super().__init__(superobj, typeobj=typeobj, name=name)
 
-class Closure(TypeDefinition):
+class Closure(TypeDefinition, _Call):
     def __init__(self, stack_frame, content, *param_names):
         assert isinstance(stack_frame, StackFrame)
         
