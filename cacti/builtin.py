@@ -122,17 +122,12 @@ def _make_hook_isa_method_def():
     def hook_isa_body():
         curr_frame = peek_stack_frame()
         kind = curr_frame.symbol_stack['kind']
-        
         obj = curr_frame.owner.selfobj
-        print("Owner: " + curr_frame.owner.to_string())
         
         while True:
-            print("Obj: " + obj.to_string())
-            print("ObjTypeObj: " + obj.typeobj.to_string())
-            if obj.typeobj.name == kind.name:
+            if obj.typeobj is kind:
                 return get_builtin('true')
             elif obj.superobj:
-                print(obj.typeobj.name + " != " + kind.name)
                 obj = obj.superobj
             else:
                 return get_builtin('false')
