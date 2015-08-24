@@ -1,0 +1,25 @@
+class Foo {}
+
+class Image : Foo {}
+
+var f = Foo()
+
+print(f isa Foo)
+
+print(f isa Object)
+
+print(f isa Foo)
+
+print(f isa Image)
+
+var i = Image()
+
+print(i isa Image)
+
+print(i isa Foo)
+
+print(i isa Object)
+
+print(true isa false.type)
+
+print(nothing isa nothing.type)

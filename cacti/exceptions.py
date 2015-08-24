@@ -1,6 +1,6 @@
 __all__ = [
         # Exceptions
-        'ArityError', 'ConstantValueError', 'OperationNotSupportedError',
+        'ArityError', 'ConstantValueError', 'InvalidTypeError', 'OperationNotSupportedError',
         'ExecutionError', 'FatalError',
         'SymbolContentError', 'SymbolError', 'SymbolUnknownError', 'SyntaxError'
     ]
@@ -10,6 +10,8 @@ class ExecutionError(Exception): pass
 class ArityError(ExecutionError): pass
 
 class ConstantValueError(ExecutionError): pass
+
+class InvalidTypeError(ExecutionError): pass
 
 class UnsupportedMethodError(ExecutionError): pass
 

@@ -247,6 +247,7 @@ class PropertyGetValueHolder(ConstantValueHolder):
 __VALID_SYMBOL_PATTERN__ = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 __HOOKS__ = [
+        r'isa',
         r'\(\)', r'\[\]', r'\.',
         r'\*', r'\/', r'\+', r'\-',
         r'\*\=', r'\/\=', r'\+\=', r'\-\=',

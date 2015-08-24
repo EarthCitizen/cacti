@@ -63,7 +63,7 @@ class TestClassDefinition:
         assert get_type('Class') is c.typeobj
         
     def test_type_type(self):
-        c = Function('test', self.dmy)
+        c = ClassDefinition(None, 'test')
         assert get_type('Type') is c.typeobj.typeobj
 
 @pytest.mark.usefixtures('set_up_env')
@@ -75,7 +75,7 @@ class TestClosure:
         assert get_type('Closure') is c.typeobj
         
     def test_type_type(self):
-        c = Function('test', self.dmy)
+        c = Closure(peek_stack_frame(), 'test', self.dmy)
         assert get_type('Type') is c.typeobj.typeobj
 
 @pytest.mark.usefixtures('set_up_env')

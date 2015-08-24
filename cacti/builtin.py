@@ -113,10 +113,32 @@ def _make_hook_new_method_def():
         
         return obj
         
-    hook_new_callable = Callable(_hook_new_callable_content)
+    #hook_new_callable = Callable(_hook_new_callable_content)
     
-    return MethodDefinition('()', hook_new_callable)
+    return MethodDefinition('()', hook_new_body)
 
+### HOOK ISA ###
+def _make_hook_isa_method_def():
+    def hook_isa_body():
+        curr_frame = peek_stack_frame()
+        kind = curr_frame.symbol_stack['kind']
+
+        if not isinstance(kind, TypeDefinition):
+            msg = "'{}' is not an instance of Type. 'isa' requires a type for the right parameter.".format(kind.to_string())
+            raise InvalidTypeError(msg)
+
+        obj = curr_frame.owner.selfobj
+        
+        while True:
+            if obj.typeobj is kind:
+                return get_builtin('true')
+            elif obj.superobj:
+                obj = obj.superobj
+            else:
+                return get_builtin('false')
+
+    return MethodDefinition('isa', hook_isa_body, 'kind')
+        
 
 ### HOOK PROPERTY OF ###
 def _make_hook_property_of_method_def():
@@ -152,6 +174,7 @@ BUILTIN_INIT_DATA = {
                 
                 'hook_defs': {
                         #_make_hook_property_of_method_def(),
+                        _make_hook_isa_method_def(),
                         
                         _make_method_def_op_not_supported('()'),
                         _make_method_def_op_not_supported('[]'),
