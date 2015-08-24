@@ -122,6 +122,11 @@ def _make_hook_isa_method_def():
     def hook_isa_body():
         curr_frame = peek_stack_frame()
         kind = curr_frame.symbol_stack['kind']
+
+        if not isinstance(kind, TypeDefinition):
+            msg = "'{}' is not an instance of Type. 'isa' requires a type for the right parameter.".format(kind.to_string())
+            raise InvalidTypeError(msg)
+
         obj = curr_frame.owner.selfobj
         
         while True:

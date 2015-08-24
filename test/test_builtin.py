@@ -11,6 +11,13 @@ class TestObject:
     def test_type_correct(self):
         obj = make_object()
         assert obj.typeobj is get_builtin('Object')
+
+    def test_isa_throws_error_if_not_class_param(self):
+        from cacti.exceptions import InvalidTypeError
+        with pytest.raises(InvalidTypeError):
+            i = make_integer()
+            s = make_string('test')
+            s.hook_table['isa'](i)
         
     def test_isa_self(self):
         obj = make_object()

@@ -141,10 +141,11 @@ def call_property_operation_action(s, loc, toks):
     
 operators = [
     ((property_operator ^ call_operator), 1, opAssoc.LEFT, call_property_operation_action),
-    ("*", 2, opAssoc.LEFT, binary_operation_action),
-    ("/", 2, opAssoc.LEFT, binary_operation_action),
-    ("+", 2, opAssoc.LEFT, binary_operation_action),
-    ("-", 2, opAssoc.LEFT, binary_operation_action)
+    ('isa', 2, opAssoc.LEFT, binary_operation_action),
+    ('*',   2, opAssoc.LEFT, binary_operation_action),
+    ('/',   2, opAssoc.LEFT, binary_operation_action),
+    ('+',   2, opAssoc.LEFT, binary_operation_action),
+    ('-',   2, opAssoc.LEFT, binary_operation_action)
 ]
 
 operand = (super | reference | integer | string)
