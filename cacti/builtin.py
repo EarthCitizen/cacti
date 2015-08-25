@@ -430,6 +430,7 @@ def _make_function_log_info():
 
 def initialize_builtins():
     _bootstrap_basic_types()
+    _make_type('Module')
     _make_type('Function')
     _make_type('Closure')
     _make_string_class()

@@ -5,7 +5,7 @@ from cacti.runtime import *
 from cacti.exceptions import *
 
 __all__ = [
-    'ClassDefinition', 'Closure', 'Function', 'Method',
+    'ClassDefinition', 'Closure', 'Function', 'Method', 'Module',
     'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition',
     'ValDefinition', 'VarDefinition'
 ]
@@ -194,9 +194,23 @@ class TypeDefinition(ObjectDefinition):
         from cacti.builtin import make_string
         self.property_table.add_symbol('name', PropertyGetValueHolder(lambda: make_string(self.name)))
 
-class PrimitiveObjectDefinition(ObjectDefinition):
-    def __init__(self, superobj, *, typeobj=None, name=''):
-        super().__init__(superobj, typeobj=typeobj, name=name)
+class Module(TypeDefinition):
+    def __init__(self, name, *, parent=None):
+        self.logger = get_logger(self)
+
+        from cacti.builtin import get_type
+        type_type = get_type('Type')
+        module_type = get_type('Module')
+        super().__init__(type_type, None, typeobj=module_type)
+
+        self.__parent = parent
+
+    @property
+    def parent(self):
+        return self.__parent
+
+    def set_parent(self, parent):
+        self.__parent = parent
 
 class Closure(TypeDefinition, _Call):
     def __init__(self, stack_frame, content, *param_names):

@@ -55,6 +55,27 @@ class TestObjectDefinition:
         assert subclass_obj['some_method'].hook_table['()']().primitive == "SUPER"
 
 @pytest.mark.usefixtures('set_up_env')
+class TestModule:
+    def test_type(self):
+        m = Module('test')
+        assert get_type('Module') is m.typeobj
+        
+    def test_type_type(self):
+        m = Module('test')
+        assert get_type('Type') is m.typeobj.typeobj
+
+    def test_parent_from_constructor(self):
+        mp = Module('parent')
+        mc = Module('child', parent=mp)
+        assert mc.parent is mp
+
+    def test_parent_from_setter(self):
+        mp = Module('parent')
+        mc = Module('child')
+        mc.set_parent(mp)
+        assert mc.parent is mp
+
+@pytest.mark.usefixtures('set_up_env')
 class TestClassDefinition:
     def dmy(self): pass
     
