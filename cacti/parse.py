@@ -3,13 +3,14 @@ from pyparsing import *
 ParserElement.enablePackrat()
 
 from functools import reduce
+import os.path
 import cacti.runtime as rntm
 import cacti.lang as lang
 import cacti.builtin as bltn
 import cacti.ast as ast
 import cacti.exceptions as excp
 
-__all__ = ['parse_file', 'parse_string']
+__all__ = ['parse_module_file', 'parse_string']
 
 _reserved_keywords_ = [
     'and',
@@ -339,6 +340,8 @@ block.setParseAction(block_action)
 def parse_string(string):
     return value.parseString(string, parseAll=True)
 
-def parse_file(file):
-    return block.parseFile(file, parseAll=True)[0]
+def parse_module_file(file_path):
+    module_name = os.path.splitext(os.path.basename(file_path))[0]
+    block_ast = block.parseFile(file_path, parseAll=True)[0]
+    return ast.ModuleDeclaration(module_name, block_ast)
 

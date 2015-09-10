@@ -8,13 +8,28 @@ from cacti.debug import get_logger
 __all__ = [
     # Functions
     'add_root_module', 'get_root_module',
-    'isvalidhook', 'isvalidsymbol',
+    'initialize_runtime', 'isvalidhook', 'isvalidsymbol',
     'clear_stack', 'peek_stack_frame', 'pop_stack_frame', 'push_stack_frame',
     
     # Classes
     'StackFrame', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
     'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
 ]
+
+ROOT_MODULES = None
+
+def initialize_runtime():
+    global ROOT_MODULES
+    ROOT_MODULES = SymbolTable()
+
+def add_root_module(module):
+    from cacti.lang import Module
+    assert isinstance(module, Module)
+    if module.name not in ROOT_MODULES:
+        ROOT_MODULES.add_symbol(module.name, ConstantValueHolder(module))
+
+def get_root_module(name):
+    return ROOT_MODULE[name]
 
 class _Call:
     def __call__(self, *params):
@@ -59,17 +74,6 @@ class Callable(_Call):
             return_value = get_builtin('nothing')
         self.logger.debug("Returning: {}".format(str(return_value)))
         return return_value
-
-ROOT_MODULES = SymbolTable()
-
-def add_root_module(module):
-    from cacti.lang import Module
-    assert isinstance(module, Module)
-    if module.name not in ROOT_MODULES:
-        ROOT_MODULES.add_symbol(module.name, ConstantValueHolder(module))
-
-def get_root_module(name):
-    return ROOT_MODULE[name]
         
 STACK = collections.deque()
 

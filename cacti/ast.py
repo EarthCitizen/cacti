@@ -7,7 +7,7 @@ from cacti.lang import *
 from cacti.builtin import get_builtin, make_class, make_object
 
 __all__ = [
-    'Block', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
+    'Block', 'ModuleDeclaration', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
     'AssignmentStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
     'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement',
     'PropertyFieldDeclaration', 'PropertyGetSetDeclaration', 'GetMethodDefinitionStatement', 'SetMethodDefinitionStatement'
@@ -41,6 +41,24 @@ class Evaluable:
     #        self.__dict__[name] = value
     #    else:
     #        super().__setattr__(name, value)
+
+class ModuleDeclaration(Evaluable):
+    def __init__(self, module_name, *statements):
+        self.__module_name = module_name
+        self.__statements = statements
+
+    def eval(self):
+        stack_frame = StackFrame(make_object(), self.__module_name)
+        push_stack_frame(stack_frame)
+        for statement in self.__statements:
+            statement()
+        pop_stack_frame()
+
+    def __repr__(self):
+        return "{}('{}', {})".format(
+                    self.__class__.__name__,
+                    self.__module_name,
+                    repr(self.__statements))
     
 class OperationExpression(Evaluable):
     def __init__(self, operand_expr, operation, *operation_expr_params):
