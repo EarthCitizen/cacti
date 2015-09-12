@@ -106,7 +106,7 @@ class TestPropertyGetValueHolder:
         with pytest.raises(ConstantValueError):
             _property.set_value(make_integer(100))
 
-            
+
 class TestIsValidSymbol:
     
     valid_symbols = ['x', 'X', '_', 'X_', 'AAAAAAAAAAAAA', 'a_a_a', '_123', '_____6', 'dddd____']
@@ -121,6 +121,19 @@ class TestIsValidSymbol:
     def test_invalid_symbold(self, symbol):
         assert False == isvalidsymbol(symbol)
 
+class TestIsValidModule:
+    valid_symbols = ['x', 'X', '_', 'X_.G.B.C', 'AAAAAAA', 'a_a_a.bb.__c123', '_123', '_123._456.A', '_____6', 'dddd____']
+    
+    invalid_symbols = ['1', '1_', ' ', ' x', ' x ', '123abc', '3', 'A.b.c.', '.', '.a.b', 3]
+    
+    @pytest.mark.parametrize('symbol', valid_symbols)
+    def test_valid_symbols(self, symbol):
+        assert True == isvalidmodule(symbol)
+    
+    @pytest.mark.parametrize('symbol', invalid_symbols)
+    def test_invalid_symbold(self, symbol):
+        assert False == isvalidmodule(symbol)
+    
 
 class TestSymbolTable:
     def test_from_dict_must_be_dict(self):

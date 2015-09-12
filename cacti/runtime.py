@@ -7,8 +7,8 @@ from cacti.debug import get_logger
 
 __all__ = [
     # Functions
-    'add_root_module', 'get_root_module',
-    'initialize_runtime', 'isvalidhook', 'isvalidsymbol',
+    'add_module', 'get_module',
+    'initialize_runtime', 'isvalidhook', 'isvalidsymbol', 'isvalidmodule',
     'clear_stack', 'peek_stack_frame', 'pop_stack_frame', 'push_stack_frame',
     
     # Classes
@@ -16,24 +16,33 @@ __all__ = [
     'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
 ]
 
-ROOT_MODULES = None
+__MODULES = None
 
 def initialize_runtime():
-    global ROOT_MODULES
-    ROOT_MODULES = SymbolTable()
+    global __MODULES
+    __MODULES = SymbolTable(symbol_validator=isvalidmodule)
 
-def add_root_module(module):
+def add_module(module):
     from cacti.lang import Module
     assert isinstance(module, Module)
-    if module.name not in ROOT_MODULES:
-        ROOT_MODULES.add_symbol(module.name, ConstantValueHolder(module))
+    if not module_exists(module.name):
+        __MODULES.add_symbol(module.name, ConstantValueHolder(module))
+    else:
+        raise Error('Module ' + module.name + ' already exists: TODO HANDLE THIS BETTER')
 
-def get_root_module(name):
-    return ROOT_MODULE[name]
+def module_exists(name):
+    return module.name in __MODULES
+
+def get_module(name):
+    return __MODULES[name]
 
 class _Call:
     def __call__(self, *params):
         return self.call(*params)
+        
+    # This chould be overwridden
+    def call(self, *params):
+        pass
     
 class Callable(_Call):
     
@@ -139,6 +148,7 @@ class StackFrame:
         self.__symbol_stack = SymbolTableStack()
         self.__symbol_stack.push(get_builtin_table())
         self.__symbol_stack.push(SymbolTable())
+        self.__data_store = {}
     
     @property
     def owner(self):
@@ -162,6 +172,10 @@ class StackFrame:
     
     def mark_exit_flag(self):
         self.__exit_flag = True
+        
+    @property
+    def data_store(self):
+        return self.__data_store
     
     def __copy__(self):
         inst_copy = self.__class__(self.__owner, self.__name, self.__selfobj)
@@ -272,11 +286,18 @@ __HOOKS__ = [
 
 __VALID_HOOK_PATTERN__ =  re.compile(r'^' + r'|'.join(__HOOKS__) + r'$')
 
+__MODULE_SECTION = r'([A-Za-z_][A-Za-z0-9_]*)+'
+
+__VALID_MODULE_PATTERN__ = re.compile(r'^' + __MODULE_SECTION + r'(\.' + __MODULE_SECTION + r')*$')
+
 def isvalidsymbol(symbol):
     return True if isinstance(symbol, str) and __VALID_SYMBOL_PATTERN__.match(symbol) else False
 
 def isvalidhook(symbol):
     return True if isinstance(symbol, str) and __VALID_HOOK_PATTERN__.match(symbol) else False
+    
+def isvalidmodule(symbol):
+    return True if isinstance(symbol, str) and __VALID_MODULE_PATTERN__.match(symbol) else False
 
 class SymbolTable:
     def __init__(self, from_dict={}, parent_table=None, symbol_validator=isvalidsymbol):
