@@ -31,7 +31,7 @@ def add_module(module):
         raise Error('Module ' + module.name + ' already exists: TODO HANDLE THIS BETTER')
 
 def module_exists(name):
-    return module.name in __MODULES
+    return name in __MODULES
 
 def get_module(name):
     return __MODULES[name]
@@ -317,7 +317,18 @@ class SymbolTable:
             raise TypeError("parent_table must be a 'SymbolTable'")
         
         self.__parent_table = parent_table
-        
+    
+    def __flatten_values(self):
+        if self.__parent_table:
+            flt = self.__parent_table.__flatten_values()
+            flt.update(self.__table)
+            return flt
+        else:
+            return self.__table.copy()
+    
+    def symbol_holder_iter(self):
+        return self.__flatten_values().items()
+    
     def add_symbol(self, symbol, content):
         self.__check_symbol(symbol)
         self.__check_content(content)

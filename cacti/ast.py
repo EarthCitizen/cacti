@@ -53,6 +53,15 @@ class ModuleDeclaration(Evaluable):
         for statement in self.__statements:
             statement()
         pop_stack_frame()
+        module = Module(self.__module_name)
+        # There should only be one item
+        # in the symbol stack at this point.
+        # If not, we have a problem.
+        symbol_table = stack_frame.symbol_stack.peek()
+        for k, v in symbol_table.symbol_holder_iter():
+            module.private_table.add_symbol(k, v)
+        add_module(module)
+        return module
 
     def __repr__(self):
         return "{}('{}', {})".format(

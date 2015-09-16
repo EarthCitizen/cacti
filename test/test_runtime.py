@@ -206,6 +206,47 @@ class TestSymbolTable:
         parent_table = SymbolTable({'y': ValueHolder(9)})
         table = SymbolTable({'x': ValueHolder(4)}, parent_table=parent_table)
         assert 'y' in table
+        
+    def test_symbol_holder_iter_single_layer(self):
+        holder_x = ValueHolder(4)
+        holder_y = ValueHolder(5)
+        holder_z = ValueHolder(6)
+        table = SymbolTable({'x': holder_x, 'y': holder_y, 'z': holder_z})
+        assert {'x': holder_x, 'y': holder_y, 'z': holder_z} == dict(table.symbol_holder_iter())
+    
+    def test_symbol_holder_iter_nested_tables(self):
+        holder_x = ValueHolder(4)
+        grandparent = SymbolTable({'x': holder_x})
+        holder_y = ValueHolder(5)
+        parent = SymbolTable({'y': holder_y}, parent_table=grandparent)
+        holder_z = ValueHolder(6)
+        child = SymbolTable({'z': holder_z}, parent_table=parent)
+        assert {'x': holder_x, 'y': holder_y, 'z': holder_z} == dict(child.symbol_holder_iter())
+    
+    def test_symbol_holder_iter_child_shadows_parents(self):
+        holder_x = ValueHolder(4)
+        grandparent_a = ValueHolder(4.5)
+        grandparent = SymbolTable({'x': holder_x, 'a': grandparent_a})
+        holder_y = ValueHolder(5)
+        parent_a = ValueHolder(5.5)
+        parent = SymbolTable({'y': holder_y, 'a': parent_a}, parent_table=grandparent)
+        holder_z = ValueHolder(6)
+        child_a = ValueHolder(6.5)
+        child = SymbolTable({'z': holder_z, 'a': child_a}, parent_table=parent)
+        expected = {'x': holder_x, 'y': holder_y, 'z': holder_z, 'a': child_a}
+        assert expected == dict(child.symbol_holder_iter())
+        
+    def test_symbol_holder_iter_parent_shadows_grandparent(self):
+        holder_x = ValueHolder(4)
+        grandparent_a = ValueHolder(4.5)
+        grandparent = SymbolTable({'x': holder_x, 'a': grandparent_a})
+        holder_y = ValueHolder(5)
+        parent_a = ValueHolder(5.5)
+        parent = SymbolTable({'y': holder_y, 'a': parent_a}, parent_table=grandparent)
+        holder_z = ValueHolder(6)
+        child = SymbolTable({'z': holder_z}, parent_table=parent)
+        expected = {'x': holder_x, 'y': holder_y, 'z': holder_z, 'a': parent_a}
+        assert expected == dict(child.symbol_holder_iter())
     
 class TestSymbolTableChain:
     def test_chain_elements_must_be_symbol_tables(self):

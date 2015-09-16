@@ -32,6 +32,8 @@ def main():
     logging.debug('finished parse()')
     #print(module_declaration)
     module_declaration()
+    m = get_module('some.test.module')
+    print(m.name)
     #logging.debug('finished exec()')
     #i = make_integer(7)
     #print('=======')

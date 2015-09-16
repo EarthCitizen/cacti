@@ -201,9 +201,15 @@ class Module(TypeDefinition):
         from cacti.builtin import get_type
         type_type = get_type('Type')
         module_type = get_type('Module')
-        super().__init__(type_type, None, typeobj=module_type)
+        super().__init__(type_type, name, typeobj=module_type)
 
         self.__parent = parent
+        
+        self.__private_table = SymbolTable()
+        
+    @property
+    def private_table(self):
+        return self.__private_table
 
     @property
     def parent(self):
