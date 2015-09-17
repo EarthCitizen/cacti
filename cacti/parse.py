@@ -16,7 +16,7 @@ _reserved_keywords_ = [
     'and',
     'block',
     'class', 'closure',
-    'else',
+    'else', 'export',
     'false', 'for', 'function',
     'get',
     'id', 'if', 'in', 'is',
@@ -89,6 +89,7 @@ optional_param_values = Group(Optional(delimitedList(value)))
 
 keyword_class = Keyword('class').suppress()
 keyword_closure = Keyword('closure').suppress()
+keyword_export = Keyword('export').suppress()
 keyword_function = Keyword('function').suppress()
 keyword_get = Keyword('get').suppress()
 keyword_method = Keyword('method').suppress()
@@ -307,9 +308,13 @@ def klass_action(s, loc, toks):
 klass.setParseAction(klass_action)
 klass_statement = klass + statement_end
 
+### EXPORT
+
+export_statement = keyword_export + Group(delimitedList(object_identifier))
+
 ### STATEMENT
 
-statement = (val_statement | var_statement | value_statement | assignment_statement | comment)
+statement = (val_statement | var_statement | value_statement | assignment_statement | export_statement | comment)
 
 ### RETURN STATEMENT
 

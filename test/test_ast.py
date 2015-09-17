@@ -59,6 +59,31 @@ class TestAssignmentStatement:
         assert x.primitive == 10
 
 @pytest.mark.usefixtures('set_up_env')
+class TestExportStatement:
+    def test_single_symbol(self):
+        holder = ValueHolder(make_integer(5))
+        table = peek_stack_frame().symbol_stack.peek()
+        table.add_symbol('x', holder)
+        expt = ExportStatement('x')
+        frame = peek_stack_frame()
+        assert frame.data_store['exports'] == {'x': holder}
+
+    def test_multiple_symbols(self):
+        holder_x = ValueHolder(make_integer(5))
+        holder_y = ValueHolder(make_integer(6))
+        holder_z = ValueHolder(make_integer(7))
+        table = peek_stack_frame().symbol_stack.peek()
+        table.add_symbol('x', holder_x)
+        table.add_symbol('y', holder_y)
+        table.add_symbol('z', holder_z)
+        expt = ExportStatement('x')
+        frame = peek_stack_frame()
+        assert frame.data_store['exports'] == {'x': holder_x, 'y': holder_y, 'z': holder_z}
+
+    def test_symbol_not_found(self):
+        pass
+
+@pytest.mark.usefixtures('set_up_env')
 class TestValDeclarationStatement:
     def test_creates_symbol_with_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))

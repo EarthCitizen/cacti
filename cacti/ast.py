@@ -8,7 +8,7 @@ from cacti.builtin import get_builtin, make_class, make_object
 
 __all__ = [
     'Block', 'ModuleDeclaration', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
-    'AssignmentStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
+    'AssignmentStatement', 'ExportStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
     'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement',
     'PropertyFieldDeclaration', 'PropertyGetSetDeclaration', 'GetMethodDefinitionStatement', 'SetMethodDefinitionStatement'
     ]
@@ -154,6 +154,13 @@ class AssignmentStatement(Evaluable):
             'target_expr': repr(self.__target_expr)
         }
         return "{class_name}('{symbol}', {value_expr}, {target_expr})".format(**kwargs)
+
+class ExportStatement(Evaluable):
+    def __init__(self, *exports):
+        self.logger = get_logger(self)
+
+    def eval(self): pass
+
     
 class ClassDeclarationStatement(Evaluable):
     def __init__(self, name, superclass_name, *parts):
