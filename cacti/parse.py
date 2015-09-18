@@ -311,10 +311,13 @@ klass_statement = klass + statement_end
 ### EXPORT
 
 export_statement = keyword_export + Group(delimitedList(object_identifier))
+def export_statement_action(s, loc, toks):
+    return ast.ExportStatement(*toks[0])
+export_statement.setParseAction(export_statement_action)
 
 ### STATEMENT
 
-statement = (val_statement | var_statement | value_statement | assignment_statement | export_statement | comment)
+statement = (val_statement | var_statement | value_statement | assignment_statement | comment)
 
 ### RETURN STATEMENT
 
@@ -331,22 +334,24 @@ return_statement.setParseAction(return_statement_action)
 ### CALLABLE BLOCK
 
 callable_block <<= ZeroOrMore(return_statement | statement)
-def callable_block_action(s, loc, tok):
-    return ast.Block(*tok)
+def callable_block_action(s, loc, toks):
+    return ast.Block(*toks)
 callable_block.setParseAction(callable_block_action)
 
 ### BLOCK
 
 block <<= ZeroOrMore(statement)
-def block_action(s, loc, tok):
-    return ast.Block(*tok)
+def block_action(s, loc, toks):
+    return ast.Block(*toks)
 block.setParseAction(block_action)
+
+module_content = (Optional(export_statement) + block)
 
 def parse_string(string):
     return value.parseString(string, parseAll=True)
 
 def parse_module_file(file_path):
     module_name = os.path.splitext(os.path.basename(file_path))[0]
-    block_ast = block.parseFile(file_path, parseAll=True)[0]
-    return ast.ModuleDeclaration(module_name, block_ast)
+    module_sections = module_content.parseFile(file_path, parseAll=True)
+    return ast.ModuleDeclaration(module_name, *module_sections)
 

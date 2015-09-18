@@ -61,27 +61,16 @@ class TestAssignmentStatement:
 @pytest.mark.usefixtures('set_up_env')
 class TestExportStatement:
     def test_single_symbol(self):
-        holder = ValueHolder(make_integer(5))
-        table = peek_stack_frame().symbol_stack.peek()
-        table.add_symbol('x', holder)
         expt = ExportStatement('x')
         frame = peek_stack_frame()
-        assert frame.data_store['exports'] == {'x': holder}
+        expt()
+        assert frame.data_store['exports'] == {'x'}
 
     def test_multiple_symbols(self):
-        holder_x = ValueHolder(make_integer(5))
-        holder_y = ValueHolder(make_integer(6))
-        holder_z = ValueHolder(make_integer(7))
-        table = peek_stack_frame().symbol_stack.peek()
-        table.add_symbol('x', holder_x)
-        table.add_symbol('y', holder_y)
-        table.add_symbol('z', holder_z)
-        expt = ExportStatement('x')
+        expt = ExportStatement('x', 'y', 'z')
         frame = peek_stack_frame()
-        assert frame.data_store['exports'] == {'x': holder_x, 'y': holder_y, 'z': holder_z}
-
-    def test_symbol_not_found(self):
-        pass
+        expt()
+        assert frame.data_store['exports'] == {'x', 'y', 'z'}
 
 @pytest.mark.usefixtures('set_up_env')
 class TestValDeclarationStatement:

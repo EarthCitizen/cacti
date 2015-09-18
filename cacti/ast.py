@@ -13,6 +13,12 @@ __all__ = [
     'PropertyFieldDeclaration', 'PropertyGetSetDeclaration', 'GetMethodDefinitionStatement', 'SetMethodDefinitionStatement'
     ]
 
+# Turn an iterable into a string
+# with each element separated by
+# a comma and space
+def repr_comma_list(c):
+    return ', '.join(list(map(repr, c)))
+
 class Evaluable:
     def __call__(self):
         error = None
@@ -158,9 +164,18 @@ class AssignmentStatement(Evaluable):
 class ExportStatement(Evaluable):
     def __init__(self, *exports):
         self.logger = get_logger(self)
+        self.__exports = set(exports)
 
-    def eval(self): pass
+    def eval(self):
+        peek_stack_frame().data_store['exports'] = set(self.__exports)
+        return None
 
+    def __repr__(self):
+        kwargs = {
+            'class_name': self.__class__.__name__,
+            'exports': repr_comma_list(self.__exports)
+        }
+        return "{class_name}({exports})".format(**kwargs)
     
 class ClassDeclarationStatement(Evaluable):
     def __init__(self, name, superclass_name, *parts):
