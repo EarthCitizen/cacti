@@ -255,7 +255,8 @@ def property_get_set_action(s, loc, toks):
         [ast.GetMethodDefinitionStatement, ast.SetMethodDefinitionStatement],
         [ast.SetMethodDefinitionStatement, ast.GetMethodDefinitionStatement]]
     def get_set_syntax_error():
-        raise SyntaxError("property '{}' requires exactly one 'get' or one 'get' and one 'set': {}".format(toks[0], _get_source_info(s, loc)))
+        msg = "property '{}' requires exactly one 'get' or one 'get' and one 'set': {}"
+        raise SyntaxError(msg.format(toks[0], _get_source_info(s, loc)))
     sections_len = len(toks[1:])
     if (sections_len < 1) or (sections_len > 2):
         get_set_syntax_error()

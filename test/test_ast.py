@@ -6,6 +6,47 @@ from cacti.lang import *
 from cacti.builtin import *
 from cacti.ast import *
 
+@pytest.mark.usefixtures('set_up_env')
+class TestModuleDeclaration:
+    def test_process_exports_copies_exports_to_public_table(self):
+        stack_frame = StackFrame(make_object(), 'test.module')
+        stack_frame.data_store['exports'] = {'a', 'b', 'c'}
+        table = stack_frame.symbol_stack.peek()
+        holder_a = ValueHolder(1)
+        holder_b = ValueHolder(2)
+        holder_c = ValueHolder(3)
+        holder_d = ValueHolder(4)
+        module = Module('test.module')
+        module.private_table.add_symbol('a', holder_a)
+        module.private_table.add_symbol('b', holder_b)
+        module.private_table.add_symbol('c', holder_c)
+        module.private_table.add_symbol('d', holder_d)
+        module_dec = ModuleDeclaration('test.module')
+        module_dec.process_exports(module, stack_frame)
+        unexpected = {('d', holder_d)}
+        expected = {('a', holder_a), ('b', holder_b), ('c', holder_c)}
+        actual = set(module.public_table.symbol_holder_iter())
+        assert expected.issubset(actual) and not(unexpected.issubset(actual))
+
+    def test_process_statement_results_copies_stack_frame_symbols_to_private_table(self):
+        stack_frame = StackFrame(make_object(), 'test.module')
+        table = stack_frame.symbol_stack.peek()
+        holder_a = ValueHolder(1)
+        holder_b = ValueHolder(2)
+        holder_c = ValueHolder(3)
+        holder_d = ValueHolder(4)
+        module = Module('test.module')
+        table.add_symbol('a', holder_a)
+        table.add_symbol('b', holder_b)
+        table.add_symbol('c', holder_c)
+        table.add_symbol('d', holder_d)
+        module_dec = ModuleDeclaration('test.module')
+        module_dec.process_statement_results(module, stack_frame)
+        expected = {('a', holder_a), ('b', holder_b), ('c', holder_c), ('d', holder_d)}
+        actual = set(module.private_table.symbol_holder_iter())
+        assert expected.issubset(actual)
+
+@pytest.mark.usefixtures('set_up_env')
 class TestOperationExpression:
     def test_returns_expected_value(self):
         def function_content():
@@ -15,14 +56,11 @@ class TestOperationExpression:
             y = symbol_stack['y']
             return x.hook_table['*'](y)
         function = Function('foo', function_content, 'x', 'y')
-        main_object = get_builtin('Object').hook_table['()']()
-        main_env = StackFrame(main_object, 'main')
-        main_stack = main_env.symbol_stack
-        main_table = SymbolTable()
-        main_table.add_symbol(function.name, ConstantValueHolder(function))
-        main_stack.push(main_table)
-        push_stack_frame(main_env)
-        expr = OperationExpression(ReferenceExpression('foo'), '()', ValueExpression(make_integer(10)), ValueExpression(make_integer(2)))
+        table = peek_stack_frame().symbol_stack.peek()
+        table.add_symbol(function.name, ConstantValueHolder(function))
+        expr = OperationExpression(ReferenceExpression('foo'), '()',
+                    ValueExpression(make_integer(10)),
+                    ValueExpression(make_integer(2)))
         assert 20 == expr().primitive
         
 class TestPropertyExpression:

@@ -56,24 +56,42 @@ class ModuleDeclaration(Evaluable):
     def eval(self):
         stack_frame = StackFrame(make_object(), self.__module_name)
         push_stack_frame(stack_frame)
+        self.__execute_statements()
+        module = Module(self.__module_name)
+        self.process_stack_frame_results(module, stack_frame)
+        self.process_exports(module, stack_frame)
+        pop_stack_frame()
+        # TODO - we will eventuall need to
+        # raise an error in some way and test
+        # for that in the case that a module
+        # already exists
+        add_module(module)
+        return module
+
+    def __execute_statements(self):
         for statement in self.__statements:
             statement()
-        pop_stack_frame()
-        module = Module(self.__module_name)
+
+    def process_statement_results(self, module, stack_frame):
         # There should only be one item
         # in the symbol stack at this point.
         # If not, we have a problem.
         symbol_table = stack_frame.symbol_stack.peek()
         for k, v in symbol_table.symbol_holder_iter():
             module.private_table.add_symbol(k, v)
-        add_module(module)
-        return module
+
+    def process_exports(self, module, stack_frame):
+        exports = stack_frame.data_store['exports']
+        symbol_holders = module.private_table.symbol_holder_iter()
+        to_add = list(filter(lambda sh: sh[0] in exports, symbol_holders))
+        for s, h in to_add:
+            module.public_table.add_symbol(s, h)
 
     def __repr__(self):
         return "{}('{}', {})".format(
                     self.__class__.__name__,
                     self.__module_name,
-                    repr(self.__statements))
+                    repr_comma_list(self.__statements))
     
 class OperationExpression(Evaluable):
     def __init__(self, operand_expr, operation, *operation_expr_params):
@@ -209,7 +227,11 @@ class ClassDeclarationStatement(Evaluable):
         return klass
     
     def __repr__(self):
-        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__superclass_name), repr(self.__parts))
+        return "{}({}, {}, {})".format(
+                    self.__class__.__name__,
+                    repr(self.__name),
+                    repr(self.__superclass_name),
+                    repr(self.__parts))
 
 class PropertyFieldDeclaration(Evaluable):
     def __init__(self, property_name, field_name):
@@ -269,7 +291,10 @@ class PropertyGetSetDeclaration(Evaluable):
         return prop_def
 
     def __repr__(self):
-        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__property_name), repr(self.__get_def), repr(self.__set_def))
+        return "{}({}, {}, {})".format(
+                    self.__class__.__name__,
+                    repr(self.__property_name),
+                    repr(self.__get_def), repr(self.__set_def))
         
 class MethodDefinitionDeclarationStatement(Evaluable):
     def __init__(self, name, content, *params):
@@ -281,7 +306,11 @@ class MethodDefinitionDeclarationStatement(Evaluable):
         return MethodDefinition(self.__name, self.__content, *self.__params)
         
     def __repr__(self):
-        return "{}({}, {}, {})".format(self.__class__.__name__, repr(self.__name), repr(self.__content), repr(self.__params))
+        return "{}({}, {}, {})".format(
+                    self.__class__.__name__,
+                    repr(self.__name),
+                    repr(self.__content),
+                    repr(self.__params))
 
 class ClosureDeclarationStatement(Evaluable):
     def __init__(self, expr, *params):
