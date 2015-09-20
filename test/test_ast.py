@@ -8,7 +8,7 @@ from cacti.ast import *
 
 @pytest.mark.usefixtures('set_up_env')
 class TestModuleDeclaration:
-    def test_process_exports_copies_exports_to_public_table(self):
+    def test_process_exports_copies_exports(self):
         stack_frame = StackFrame(make_object(), 'test.module')
         stack_frame.data_store['exports'] = {'a', 'b', 'c'}
         table = stack_frame.symbol_stack.peek()
@@ -23,12 +23,42 @@ class TestModuleDeclaration:
         module.private_table.add_symbol('d', holder_d)
         module_dec = ModuleDeclaration('test.module')
         module_dec.process_exports(module, stack_frame)
-        unexpected = {('d', holder_d)}
-        expected = {('a', holder_a), ('b', holder_b), ('c', holder_c)}
-        actual = set(module.public_table.symbol_holder_iter())
-        assert expected.issubset(actual) and not(unexpected.issubset(actual))
+        a_cw = ('a', ConstantWrapperValueHolder(holder_a))
+        b_cw = ('b', ConstantWrapperValueHolder(holder_b))
+        c_cw = ('c', ConstantWrapperValueHolder(holder_c))
+        d_cw = ('d', ConstantWrapperValueHolder(holder_d))
+        cws = [a_cw, b_cw, c_cw, d_cw]
+        module_cws = list(module.public_table.symbol_holder_iter())
+        actual = list(map(lambda e: e in module_cws, cws))
+        assert [True, True, True, False] == actual
 
-    def test_process_statement_results_copies_stack_frame_symbols_to_private_table(self):
+    def test_exports_are_constant(self):
+        stack_frame = StackFrame(make_object(), 'test.module')
+        stack_frame.data_store['exports'] = {'a'}
+        table = stack_frame.symbol_stack.peek()
+        holder_a = ValueHolder(1)
+        module = Module('test.module')
+        module.private_table.add_symbol('a', holder_a)
+        module_dec = ModuleDeclaration('test.module')
+        module_dec.process_exports(module, stack_frame)
+        with pytest.raises(ConstantValueError):
+            module.public_table['a'] = 5
+
+    def test_exports_reflect_change_to_original(self):
+        stack_frame = StackFrame(make_object(), 'test.module')
+        stack_frame.data_store['exports'] = {'a'}
+        table = stack_frame.symbol_stack.peek()
+        holder_a = ValueHolder(1)
+        module = Module('test.module')
+        module.private_table.add_symbol('a', holder_a)
+        module_dec = ModuleDeclaration('test.module')
+        module_dec.process_exports(module, stack_frame)
+        value_before = module.public_table['a']
+        module.private_table['a'] = 5
+        value_after = module.public_table['a']
+        assert [value_before, value_after] == [1, 5]
+
+    def test_process_statement_results_copies_stack_frame_symbols(self):
         stack_frame = StackFrame(make_object(), 'test.module')
         table = stack_frame.symbol_stack.peek()
         holder_a = ValueHolder(1)

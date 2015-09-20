@@ -218,6 +218,12 @@ class Module(TypeDefinition):
     def set_parent(self, parent):
         self.__parent = parent
 
+    def __getitem__(self, symbol_name):
+        return self.public_table[symbol_name]
+    
+    def __setitem__(self, symbol_name, symbol_value):
+        self.public_table[symbol_name] = symbol_value
+
 class Closure(TypeDefinition, _Call):
     def __init__(self, stack_frame, content, *param_names):
         assert isinstance(stack_frame, StackFrame)

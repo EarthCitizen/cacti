@@ -40,6 +40,26 @@ class TestConstantValueHolder:
             holder = ConstantValueHolder(123)
             holder.value = 456
 
+class TestConstantWrapperValueHolder:
+    def test_fetches_value_from_original_value_holder(self):
+        original = ValueHolder(5)
+        wrapper = ConstantWrapperValueHolder(original)
+        value_before = wrapper.value
+        original.value = 6
+        value_after = wrapper.value
+        assert [5, 6] == [value_before, value_after]
+
+    def test_error_when_change_attempted(self):
+        with pytest.raises(ConstantValueError):
+            holder = ConstantWrapperValueHolder(ValueHolder(123))
+            holder.value = 456
+
+    def test_equals_when_wrapper_holders_equal(self):
+        wrapped_holder = ValueHolder(123)
+        c1 = ConstantWrapperValueHolder(wrapped_holder)
+        c2 = ConstantWrapperValueHolder(wrapped_holder)
+        assert c1 == c2
+
 @pytest.mark.usefixtures('set_up_env')            
 class TestPropertyGetSetValueHolder:
     def test_getter_executed(self):

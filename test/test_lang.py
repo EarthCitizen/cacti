@@ -75,6 +75,12 @@ class TestModule:
         mc.set_parent(mp)
         assert mc.parent is mp
 
+    def test_index_values_from_public_table(self):
+        m = Module('test')
+        m.private_table.add_symbol('a', ValueHolder(5))
+        m.public_table.add_symbol('a', ValueHolder(6))
+        assert [6, 5] == [m['a'], m.private_table['a']]
+
 @pytest.mark.usefixtures('set_up_env')
 class TestClassDefinition:
     def dmy(self): pass

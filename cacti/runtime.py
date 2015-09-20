@@ -12,8 +12,11 @@ __all__ = [
     'clear_stack', 'peek_stack_frame', 'pop_stack_frame', 'push_stack_frame',
     
     # Classes
-    'StackFrame', 'Callable', 'ConstantValueHolder', 'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
-    'SymbolTable', 'SymbolTableChain', 'SymbolTableStack', 'ValueHolder',
+    
+    'Callable', 'ConstantValueHolder', 'ConstantWrapperValueHolder',
+    'PropertyGetValueHolder', 'PropertyGetSetValueHolder',
+    'StackFrame', 'SymbolTable', 'SymbolTableChain', 'SymbolTableStack',
+    'ValueHolder'
 ]
 
 __MODULES = None
@@ -200,7 +203,7 @@ class ValueHolder:
         self.logger = get_logger(self)
         
         self.__value = value
-        
+
     def get_value(self):
         return_value = self.__value
         self.logger.debug('Get: ' + str(return_value))
@@ -220,8 +223,6 @@ class ValueHolder:
         return self.__class__.__name__ + "(" + str(self.value) + ")"
     
     value = property(get_value, set_value)
-    
-
 
 class ConstantValueHolder(ValueHolder):
     def __init__(self, value):
@@ -235,6 +236,38 @@ class ConstantValueHolder(ValueHolder):
         raise ConstantValueError()
     
     value = property(ValueHolder.get_value, set_value)
+
+class ConstantWrapperValueHolder(ValueHolder):
+    def __init__(self, value_holder):
+        assert isinstance(value_holder, ValueHolder)
+        
+        self.__value_holder = value_holder
+        
+        self.logger = get_logger(self)
+        self.logger.debug("Create with value: {}".format(value_holder))
+
+    def get_value(self):
+        return_value = self.__value_holder.value
+        self.logger.debug('Get: ' + str(return_value))
+        return return_value
+    
+    def set_value(self, value):
+        self.logger.debug("Tried to set constant with value: {}".format(value))
+        raise ConstantValueError()
+
+    def __copy__(self):
+        return self.__class__(copy.copy(self.__value_holder))
+
+    def __eq__(self, other):
+        return self.__value_holder == other.__value_holder
+
+    def __repr__(self):
+        return str(self)
+        
+    def __str__(self):
+        return self.__class__.__name__ + "(" + str(self.__value_holder) + ")"
+    
+    value = property(get_value, set_value)
 
 class PropertyGetSetValueHolder(ValueHolder):
     def __init__(self, getter, setter):
