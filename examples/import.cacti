@@ -1,5 +1,5 @@
 import some.test.module as abc only F, B, Something
-import some.test.module only F
+import some.test.module
 
 print(abc.F + abc.B)
 
@@ -7,3 +7,5 @@ print(F)
 
 var c = abc.Something()
 print(c.type)
+
+print(name)

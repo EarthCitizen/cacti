@@ -327,8 +327,8 @@ import_statement = keyword_import + module_name.setResultsName('module_name') + 
                    Optional(keyword_as + object_identifier).setResultsName('alias') + \
                    Optional(keyword_only + delimitedList(object_identifier)).setResultsName('only')
 def import_statement_action(s, loc, toks):
-    alias = None if 'alias' not in toks else toks['alias'][0]
-    only  = []   if 'only'  not in toks else list(toks['only'])
+    alias = toks.get('alias', [None])[0]
+    only  = list(toks.get('only', []))
     return ast.ImportStatement(toks['module_name'], alias=alias, only=only)
 import_statement.setParseAction(import_statement_action)
 
