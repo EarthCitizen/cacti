@@ -1,0 +1,9 @@
+import some.test.module as abc only F, B, Something
+import some.test.module only F
+
+print(abc.F + abc.B)
+
+print(F)
+
+var c = abc.Something()
+print(c.type)

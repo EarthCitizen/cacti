@@ -429,8 +429,13 @@ def _make_function_log_info():
     add_builtin(fn.name, fn)
 
 def initialize_builtins():
+    global _TYPES
+    _TYPES = SymbolTable()
+    global _BUILTINS
+    _BUILTINS = SymbolTable()
     _bootstrap_basic_types()
     _make_type('Module')
+    _make_type('ModuleAlias')
     _make_type('Function')
     _make_type('Closure')
     _make_string_class()

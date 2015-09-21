@@ -141,6 +141,70 @@ class TestExportStatement:
         assert frame.data_store['exports'] == {'x', 'y', 'z'}
 
 @pytest.mark.usefixtures('set_up_env')
+class TestImportStatement:
+    def test_imports_all(self):
+        holder_a = ValueHolder(1)
+        holder_b = ValueHolder(2)
+        holder_c = ValueHolder(3)
+        holder_d = ValueHolder(4)
+        m = Module('test')
+        m.public_table.add_symbol('a', holder_a)
+        m.public_table.add_symbol('b', holder_b)
+        m.public_table.add_symbol('c', holder_c)
+        m.public_table.add_symbol('d', holder_d)
+        add_module(m)
+        impt = ImportStatement('test')
+        impt()
+        a_cw = ('a', holder_a)
+        b_cw = ('b', holder_b)
+        c_cw = ('c', holder_c)
+        d_cw = ('d', holder_d)
+        cws = [a_cw, b_cw, c_cw, d_cw]
+        table = peek_stack_frame().symbol_stack.peek()
+        table_cws = list(table.symbol_holder_iter())
+        actual = list(map(lambda e: e in table_cws, cws))
+        assert [True, True, True, True] == actual
+
+    def test_imports_only(self):
+        holder_a = ValueHolder(1)
+        holder_b = ValueHolder(2)
+        holder_c = ValueHolder(3)
+        holder_d = ValueHolder(4)
+        m = Module('test')
+        m.public_table.add_symbol('a', holder_a)
+        m.public_table.add_symbol('b', holder_b)
+        m.public_table.add_symbol('c', holder_c)
+        m.public_table.add_symbol('d', holder_d)
+        add_module(m)
+        impt = ImportStatement('test', only=['a', 'c'])
+        impt()
+        a_cw = ('a', holder_a)
+        b_cw = ('b', holder_b)
+        c_cw = ('c', holder_c)
+        d_cw = ('d', holder_d)
+        cws = [a_cw, b_cw, c_cw, d_cw]
+        table = peek_stack_frame().symbol_stack.peek()
+        table_cws = list(table.symbol_holder_iter())
+        actual = list(map(lambda e: e in table_cws, cws))
+        assert [True, False, True, False] == actual
+
+    def test_imports_alias(self):
+        m = Module('test')
+        add_module(m)
+        impt = ImportStatement('test', alias='abc')
+        impt()
+        symbol_value = peek_stack_frame().symbol_stack.peek()['abc']
+        assert isinstance(symbol_value, ModuleAlias)
+
+    def test_alias_is_constant(self):
+        m = Module('test')
+        add_module(m)
+        impt = ImportStatement('test', alias='abc')
+        impt()
+        with pytest.raises(ConstantValueError):
+            peek_stack_frame().symbol_stack.peek()['abc'] = 123
+
+@pytest.mark.usefixtures('set_up_env')
 class TestValDeclarationStatement:
     def test_creates_symbol_with_value(self):
         val_stmt = ValDeclarationStatement('x', ValueExpression(make_integer(5)))

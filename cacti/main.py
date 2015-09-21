@@ -26,7 +26,8 @@ def main():
     #ast = parse_string('class foo {}')
     #print(ast)
     #ast()
-    
+    test_module = parse_module_file('examples/some.test.module.cacti')
+    test_module()
     module_declaration = parse_module_file(sys.argv[1])
     #ast = parse_file('/Users/ryan/Dropbox/repositories/cacti/examples/class.cacti')
     logging.debug('finished parse()')

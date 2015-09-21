@@ -7,10 +7,25 @@ from cacti.lang import *
 from cacti.builtin import get_builtin, make_class, make_object
 
 __all__ = [
-    'Block', 'ModuleDeclaration', 'OperationExpression', 'PropertyExpression', 'ReferenceExpression', 'ValueExpression',
-    'AssignmentStatement', 'ExportStatement', 'ClosureDeclarationStatement', 'MethodDefinitionDeclarationStatement',
-    'FunctionDeclarationStatement', 'ReturnStatement', 'ValDeclarationStatement', 'VarDeclarationStatement',
-    'PropertyFieldDeclaration', 'PropertyGetSetDeclaration', 'GetMethodDefinitionStatement', 'SetMethodDefinitionStatement'
+    'AssignmentStatement',
+    'Block',
+    'ClosureDeclarationStatement',
+    'ExportStatement',
+    'FunctionDeclarationStatement',
+    'GetMethodDefinitionStatement',
+    'ImportStatement',
+    'MethodDefinitionDeclarationStatement',
+    'ModuleDeclaration',
+    'OperationExpression',
+    'PropertyExpression',
+    'PropertyFieldDeclaration',
+    'PropertyGetSetDeclaration',
+    'ReferenceExpression',
+    'ReturnStatement',
+    'SetMethodDefinitionStatement',
+    'ValDeclarationStatement',
+    'ValueExpression',
+    'VarDeclarationStatement'
     ]
 
 # Turn an iterable into a string
@@ -58,7 +73,7 @@ class ModuleDeclaration(Evaluable):
         push_stack_frame(stack_frame)
         self.__execute_statements()
         module = Module(self.__module_name)
-        self.process_stack_frame_results(module, stack_frame)
+        self.process_statement_results(module, stack_frame)
         self.process_exports(module, stack_frame)
         pop_stack_frame()
         # TODO - we will eventuall need to
@@ -81,9 +96,10 @@ class ModuleDeclaration(Evaluable):
             module.private_table.add_symbol(k, v)
 
     def process_exports(self, module, stack_frame):
-        exports = stack_frame.data_store['exports']
+        data_store = stack_frame.data_store
+        exports = data_store['exports'] if 'exports' in data_store else []
         symbol_holders = module.private_table.symbol_holder_iter()
-        to_add = list(filter(lambda sh: sh[0] in exports, symbol_holders))
+        to_add = filter(lambda sh: sh[0] in exports, symbol_holders)
         for s, h in to_add:
             module.public_table.add_symbol(s, ConstantWrapperValueHolder(h))
 
@@ -194,7 +210,38 @@ class ExportStatement(Evaluable):
             'exports': repr_comma_list(self.__exports)
         }
         return "{class_name}({exports})".format(**kwargs)
-    
+
+class ImportStatement(Evaluable):
+    def __init__(self, module_name, *, alias=None, only=[]):
+        self.logger = get_logger(self)
+        self.__module_name = module_name
+        self.__alias = alias
+        self.__only = only
+
+    def eval(self):
+        table = peek_stack_frame().symbol_stack.peek()
+        module = get_module(self.__module_name)
+        if self.__alias:
+            module_alias = ModuleAlias(module, *self.__only)
+            table.add_symbol(self.__alias, ConstantValueHolder(module_alias))
+        else:
+            symbol_holders = module.public_table.symbol_holder_iter()
+            if self.__only:
+                symbol_holders = filter(lambda e: e[0] in self.__only, symbol_holders)
+            for s, h in symbol_holders:
+                table.add_symbol(s, h)
+
+        return None
+
+    def __repr__(self):
+        kwargs = {
+            'class_name': self.__class__.__name__,
+            'module_name': repr(self.__module_name),
+            'alias': repr(self.__alias),
+            'only': repr(self.__only)
+        }
+        return "{class_name}({module_name}, alias={alias}, only={only})".format(**kwargs)
+
 class ClassDeclarationStatement(Evaluable):
     def __init__(self, name, superclass_name, *parts):
         self.logger = get_logger(self)

@@ -82,6 +82,43 @@ class TestModule:
         assert [6, 5] == [m['a'], m.private_table['a']]
 
 @pytest.mark.usefixtures('set_up_env')
+class TestModuleAlias:
+    def test_type(self):
+        m = Module('test')
+        ma = ModuleAlias(m)
+        assert get_type('ModuleAlias') is ma.typeobj
+
+    def test_index_values_from_public_table(self):
+        m = Module('test')
+        ma = ModuleAlias(m)
+        ma.public_table.add_symbol('a', ValueHolder(6))
+        assert 6 == ma['a']
+
+    def test_has_only_symbols_from_only_parameter(self):
+        m = Module('test')
+        m.public_table.add_symbol('a', ValueHolder(1))
+        m.public_table.add_symbol('b', ValueHolder(2))
+        m.public_table.add_symbol('c', ValueHolder(3))
+        m.public_table.add_symbol('d', ValueHolder(4))
+        ma = ModuleAlias(m, 'a', 'c')
+        symbols = ['a', 'b', 'c', 'd']
+        expected = [True, False, True, False]
+        actual = list(map(lambda x: x in ma.public_table, symbols))
+        assert expected == actual
+
+    def test_has_all_symbols_when_only_parameter_empty(self):
+        m = Module('test')
+        m.public_table.add_symbol('a', ValueHolder(1))
+        m.public_table.add_symbol('b', ValueHolder(2))
+        m.public_table.add_symbol('c', ValueHolder(3))
+        m.public_table.add_symbol('d', ValueHolder(4))
+        ma = ModuleAlias(m)
+        symbols = ['a', 'b', 'c', 'd']
+        expected = [True, True, True, True]
+        actual = list(map(lambda x: x in ma.public_table, symbols))
+        assert expected == actual
+
+@pytest.mark.usefixtures('set_up_env')
 class TestClassDefinition:
     def dmy(self): pass
     

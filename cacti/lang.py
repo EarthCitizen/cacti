@@ -5,8 +5,12 @@ from cacti.runtime import *
 from cacti.exceptions import *
 
 __all__ = [
-    'ClassDefinition', 'Closure', 'Function', 'Method', 'Module',
-    'MethodDefinition', 'ObjectDefinition', 'PropertyDefinition', 'TypeDefinition',
+    'ClassDefinition', 'Closure',
+    'Function',
+    'Method', 'MethodDefinition', 'Module', 'ModuleAlias',
+    'ObjectDefinition',
+    'PropertyDefinition',
+    'TypeDefinition',
     'ValDefinition', 'VarDefinition'
 ]
 
@@ -221,6 +225,31 @@ class Module(TypeDefinition):
     def __getitem__(self, symbol_name):
         return self.public_table[symbol_name]
     
+    def __setitem__(self, symbol_name, symbol_value):
+        self.public_table[symbol_name] = symbol_value
+
+class ModuleAlias(TypeDefinition):
+    def __init__(self, module, *only):
+        assert isinstance(module, Module)
+
+        self.logger = get_logger(self)
+
+        from cacti.builtin import get_type
+        type_type = get_type('Type')
+        module_alias_type = get_type('ModuleAlias')
+        super().__init__(type_type, None, typeobj=module_alias_type)
+
+        symbol_holders = module.public_table.symbol_holder_iter()
+
+        if only:
+            symbol_holders = filter(lambda x: x[0] in only, symbol_holders)
+
+        for s, h in symbol_holders:
+            self.public_table.add_symbol(s, h)
+
+    def __getitem__(self, symbol_name):
+        return self.public_table[symbol_name]
+
     def __setitem__(self, symbol_name, symbol_value):
         self.public_table[symbol_name] = symbol_value
 

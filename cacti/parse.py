@@ -13,7 +13,7 @@ import cacti.exceptions as excp
 __all__ = ['parse_module_file', 'parse_string']
 
 _reserved_keywords_ = [
-    'and',
+    'and', 'as',
     'block',
     'class', 'closure',
     'else', 'export',
@@ -22,7 +22,7 @@ _reserved_keywords_ = [
     'id', 'if', 'in', 'is',
     'method',
     'not', 'nothing',
-    'operation', 'or',
+    'only', 'operation', 'or',
     'procedure',
     'return',
     'self', 'set', 'super',
@@ -58,6 +58,8 @@ def _process_prop_call_expr(operands):
 
 identifier = Word('_' + alphas, bodyChars='_' + alphanums)
 
+module_name = Word('_' + alphas, bodyChars='_' + '.' + alphanums)
+
 object_identifier = identifier.copy()
 def object_identifier_action(s, loc, toks):
     if toks[0] in _reserved_keywords_:
@@ -87,12 +89,15 @@ def optional_param_names_action(s, loc, toks):
 optional_param_names.setParseAction(optional_param_names_action)
 optional_param_values = Group(Optional(delimitedList(value)))
 
+keyword_as = Keyword('as').suppress()
 keyword_class = Keyword('class').suppress()
 keyword_closure = Keyword('closure').suppress()
 keyword_export = Keyword('export').suppress()
 keyword_function = Keyword('function').suppress()
 keyword_get = Keyword('get').suppress()
+keyword_import = Keyword('import').suppress()
 keyword_method = Keyword('method').suppress()
+keyword_only = Keyword('only').suppress()
 keyword_property = Keyword('property').suppress()
 keyword_return = Keyword('return').suppress()
 keyword_set = Keyword('set').suppress()
@@ -316,9 +321,20 @@ def export_statement_action(s, loc, toks):
     return ast.ExportStatement(*toks[0])
 export_statement.setParseAction(export_statement_action)
 
+### IMPORT
+
+import_statement = keyword_import + module_name.setResultsName('module_name') + \
+                   Optional(keyword_as + object_identifier).setResultsName('alias') + \
+                   Optional(keyword_only + delimitedList(object_identifier)).setResultsName('only')
+def import_statement_action(s, loc, toks):
+    alias = None if 'alias' not in toks else toks['alias'][0]
+    only  = []   if 'only'  not in toks else list(toks['only'])
+    return ast.ImportStatement(toks['module_name'], alias=alias, only=only)
+import_statement.setParseAction(import_statement_action)
+
 ### STATEMENT
 
-statement = (val_statement | var_statement | value_statement | assignment_statement | comment)
+statement = (val_statement | var_statement | value_statement | assignment_statement | import_statement | comment)
 
 ### RETURN STATEMENT
 

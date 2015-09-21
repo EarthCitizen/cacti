@@ -1,2 +1,7 @@
-export F, B, C, V
+export F, B, C, Something
 var F = 5
+var B = 10
+var C = 20
+
+class Something {}
+
