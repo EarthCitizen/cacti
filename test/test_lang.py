@@ -75,10 +75,10 @@ class TestModule:
         mc.set_parent(mp)
         assert mc.parent is mp
 
-    def test_index_values_from_public_table(self):
+    def test_index_values_from_export_table(self):
         m = Module('test')
         m.private_table.add_symbol('a', ValueHolder(5))
-        m.public_table.add_symbol('a', ValueHolder(6))
+        m.export_table.add_symbol('a', ValueHolder(6))
         assert [6, 5] == [m['a'], m.private_table['a']]
 
 @pytest.mark.usefixtures('set_up_env')
@@ -96,10 +96,10 @@ class TestModuleAlias:
 
     def test_has_only_symbols_from_only_parameter(self):
         m = Module('test')
-        m.public_table.add_symbol('a', ValueHolder(1))
-        m.public_table.add_symbol('b', ValueHolder(2))
-        m.public_table.add_symbol('c', ValueHolder(3))
-        m.public_table.add_symbol('d', ValueHolder(4))
+        m.export_table.add_symbol('a', ValueHolder(1))
+        m.export_table.add_symbol('b', ValueHolder(2))
+        m.export_table.add_symbol('c', ValueHolder(3))
+        m.export_table.add_symbol('d', ValueHolder(4))
         ma = ModuleAlias(m, 'a', 'c')
         symbols = ['a', 'b', 'c', 'd']
         expected = [True, False, True, False]
@@ -108,16 +108,22 @@ class TestModuleAlias:
 
     def test_has_all_symbols_when_only_parameter_empty(self):
         m = Module('test')
-        m.public_table.add_symbol('a', ValueHolder(1))
-        m.public_table.add_symbol('b', ValueHolder(2))
-        m.public_table.add_symbol('c', ValueHolder(3))
-        m.public_table.add_symbol('d', ValueHolder(4))
+        m.export_table.add_symbol('a', ValueHolder(1))
+        m.export_table.add_symbol('b', ValueHolder(2))
+        m.export_table.add_symbol('c', ValueHolder(3))
+        m.export_table.add_symbol('d', ValueHolder(4))
         ma = ModuleAlias(m)
         symbols = ['a', 'b', 'c', 'd']
         expected = [True, True, True, True]
         actual = list(map(lambda x: x in ma.public_table, symbols))
         assert expected == actual
 
+    def test_index_from_public_table(self):
+        m = Module('test')
+        m.export_table.add_symbol('a', ValueHolder(1))
+        ma = ModuleAlias(m, 'a')
+        assert 1 == ma['a']
+    
 @pytest.mark.usefixtures('set_up_env')
 class TestClassDefinition:
     def dmy(self): pass

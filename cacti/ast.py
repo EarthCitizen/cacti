@@ -101,7 +101,7 @@ class ModuleDeclaration(Evaluable):
         symbol_holders = module.private_table.symbol_holder_iter()
         to_add = filter(lambda sh: sh[0] in exports, symbol_holders)
         for s, h in to_add:
-            module.public_table.add_symbol(s, ConstantWrapperValueHolder(h))
+            module.export_table.add_symbol(s, ConstantWrapperValueHolder(h))
 
     def __repr__(self):
         return "{}('{}', {})".format(
@@ -225,7 +225,7 @@ class ImportStatement(Evaluable):
             module_alias = ModuleAlias(module, *self.__only)
             table.add_symbol(self.__alias, ConstantValueHolder(module_alias))
         else:
-            symbol_holders = module.public_table.symbol_holder_iter()
+            symbol_holders = module.export_table.symbol_holder_iter()
             if self.__only:
                 symbol_holders = filter(lambda e: e[0] in self.__only, symbol_holders)
             for s, h in symbol_holders:

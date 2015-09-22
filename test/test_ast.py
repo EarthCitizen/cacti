@@ -28,7 +28,7 @@ class TestModuleDeclaration:
         c_cw = ('c', ConstantWrapperValueHolder(holder_c))
         d_cw = ('d', ConstantWrapperValueHolder(holder_d))
         cws = [a_cw, b_cw, c_cw, d_cw]
-        module_cws = list(module.public_table.symbol_holder_iter())
+        module_cws = list(module.export_table.symbol_holder_iter())
         actual = list(map(lambda e: e in module_cws, cws))
         assert [True, True, True, False] == actual
 
@@ -42,7 +42,7 @@ class TestModuleDeclaration:
         module_dec = ModuleDeclaration('test.module')
         module_dec.process_exports(module, stack_frame)
         with pytest.raises(ConstantValueError):
-            module.public_table['a'] = 5
+            module.export_table['a'] = 5
 
     def test_exports_reflect_change_to_original(self):
         stack_frame = StackFrame(make_object(), 'test.module')
@@ -53,9 +53,9 @@ class TestModuleDeclaration:
         module.private_table.add_symbol('a', holder_a)
         module_dec = ModuleDeclaration('test.module')
         module_dec.process_exports(module, stack_frame)
-        value_before = module.public_table['a']
+        value_before = module.export_table['a']
         module.private_table['a'] = 5
-        value_after = module.public_table['a']
+        value_after = module.export_table['a']
         assert [value_before, value_after] == [1, 5]
 
     def test_process_statement_results_copies_stack_frame_symbols(self):
@@ -148,10 +148,10 @@ class TestImportStatement:
         holder_c = ValueHolder(3)
         holder_d = ValueHolder(4)
         m = Module('test')
-        m.public_table.add_symbol('a', holder_a)
-        m.public_table.add_symbol('b', holder_b)
-        m.public_table.add_symbol('c', holder_c)
-        m.public_table.add_symbol('d', holder_d)
+        m.export_table.add_symbol('a', holder_a)
+        m.export_table.add_symbol('b', holder_b)
+        m.export_table.add_symbol('c', holder_c)
+        m.export_table.add_symbol('d', holder_d)
         add_module(m)
         impt = ImportStatement('test')
         impt()
@@ -171,10 +171,10 @@ class TestImportStatement:
         holder_c = ValueHolder(3)
         holder_d = ValueHolder(4)
         m = Module('test')
-        m.public_table.add_symbol('a', holder_a)
-        m.public_table.add_symbol('b', holder_b)
-        m.public_table.add_symbol('c', holder_c)
-        m.public_table.add_symbol('d', holder_d)
+        m.export_table.add_symbol('a', holder_a)
+        m.export_table.add_symbol('b', holder_b)
+        m.export_table.add_symbol('c', holder_c)
+        m.export_table.add_symbol('d', holder_d)
         add_module(m)
         impt = ImportStatement('test', only=['a', 'c'])
         impt()

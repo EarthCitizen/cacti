@@ -208,9 +208,13 @@ class Module(TypeDefinition):
         super().__init__(type_type, name, typeobj=module_type)
 
         self.__parent = parent
-        
+        self.__export_table = SymbolTable()
         self.__private_table = SymbolTable()
-        
+    
+    @property
+    def export_table(self):
+        return self.__export_table
+
     @property
     def private_table(self):
         return self.__private_table
@@ -223,10 +227,10 @@ class Module(TypeDefinition):
         self.__parent = parent
 
     def __getitem__(self, symbol_name):
-        return self.public_table[symbol_name]
+        return self.export_table[symbol_name]
     
     def __setitem__(self, symbol_name, symbol_value):
-        self.public_table[symbol_name] = symbol_value
+        self.export_table[symbol_name] = symbol_value
 
 class ModuleAlias(TypeDefinition):
     def __init__(self, module, *only):
@@ -239,7 +243,7 @@ class ModuleAlias(TypeDefinition):
         module_alias_type = get_type('ModuleAlias')
         super().__init__(type_type, None, typeobj=module_alias_type)
 
-        symbol_holders = module.public_table.symbol_holder_iter()
+        symbol_holders = module.export_table.symbol_holder_iter()
 
         if only:
             symbol_holders = filter(lambda x: x[0] in only, symbol_holders)

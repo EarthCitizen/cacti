@@ -8,4 +8,4 @@ print(F)
 var c = abc.Something()
 print(c.type)
 
-print(name)
+print(c)
