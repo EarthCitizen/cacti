@@ -6,6 +6,6 @@ print(abc.F + abc.B)
 print(F)
 
 var c = abc.Something()
-print(c.type)
+print(c.get_f())
 
 print(c)

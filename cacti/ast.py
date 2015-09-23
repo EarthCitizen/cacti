@@ -25,7 +25,9 @@ __all__ = [
     'SetMethodDefinitionStatement',
     'ValDeclarationStatement',
     'ValueExpression',
-    'VarDeclarationStatement'
+    'VarDeclarationStatement',
+
+    'get_current_module'
     ]
 
 # Turn an iterable into a string
@@ -33,6 +35,12 @@ __all__ = [
 # a comma and space
 def repr_comma_list(c):
     return ', '.join(list(map(repr, c)))
+
+def get_current_module():
+    stack_frame = peek_stack_frame()
+    data_store = stack_frame.data_store
+    has_module = 'module' in data_store
+    return data_store['module'] if has_module else None
 
 class Evaluable:
     def __call__(self):
@@ -69,10 +77,11 @@ class ModuleDeclaration(Evaluable):
         self.__statements = statements
 
     def eval(self):
+        module = Module(self.__module_name)
         stack_frame = StackFrame(make_object(), self.__module_name)
+        stack_frame.data_store['module'] = module
         push_stack_frame(stack_frame)
         self.__execute_statements()
-        module = Module(self.__module_name)
         self.process_statement_results(module, stack_frame)
         self.process_exports(module, stack_frame)
         pop_stack_frame()

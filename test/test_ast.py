@@ -7,6 +7,17 @@ from cacti.builtin import *
 from cacti.ast import *
 
 @pytest.mark.usefixtures('set_up_env')
+class TestGetCurrentModule:
+    def test_returns_module_from_stack_frame(self):
+        module = Module('test')
+        stack_frame = peek_stack_frame()
+        stack_frame.data_store['module'] = module
+        assert module is get_current_module()
+
+    def test_returns_none_when_no_module(self):
+        assert None == get_current_module()
+
+@pytest.mark.usefixtures('set_up_env')
 class TestModuleDeclaration:
     def test_process_exports_copies_exports(self):
         stack_frame = StackFrame(make_object(), 'test.module')
